@@ -1,3 +1,4 @@
+import random
 import pickle
 import pprint
 import numpy as np
@@ -66,4 +67,13 @@ print('Training images per class:')
 pprint.pprint(classes_count)
 print('Num classes (including bg) = {}'.format(len(classes_count)))
 
+#name of pickled config file
 config_output_filename = options.config_filename
+with open(config_output_filename, 'wb') as config_f:
+	pickle.dump(C,config_f)
+	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
+ 
+random.shuffle(all_imgs)
+
+num_imgs = len(all_imgs)
+pprint.pprint(num_imgs)
