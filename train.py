@@ -1,4 +1,5 @@
 import pickle
+import pprint
 import numpy as np
 from optparse import OptionParser
 
@@ -60,3 +61,9 @@ if 'bg' not in classes_count:
 
 #persist class_mapping in config
 C.class_mapping = class_mapping
+
+print('Training images per class:')
+pprint.pprint(classes_count)
+print('Num classes (including bg) = {}'.format(len(classes_count)))
+
+config_output_filename = options.config_filename
