@@ -1,4 +1,4 @@
-import pickle
+testimport pickle
 import numpy as np
 from optparse import OptionParser
 
