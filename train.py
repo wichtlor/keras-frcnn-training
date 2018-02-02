@@ -77,3 +77,8 @@ random.shuffle(all_imgs)
 
 num_imgs = len(all_imgs)
 pprint.pprint(num_imgs)
+
+train_imgs = [s for s in all_imgs if s['imageset'] == 'trainval']
+val_imgs = [s for s in all_imgs if s['imageset'] == 'test']
+print('Num train samples {}'.format(len(train_imgs)))
+print('Num val samples {}'.format(len(val_imgs)))
