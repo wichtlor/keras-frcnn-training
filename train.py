@@ -27,3 +27,12 @@ parser.add_option("--output_weight_path", dest="output_weight_path", help="Outpu
 parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
 
 (options, args) = parser.parse_args()
+
+C = config.Config()
+
+# pass the settings from the command line, and persist them in the config object
+# augmented training
+C.use_horizontal_flips = bool(options.horizontal_flips)
+C.use_vertical_flips = bool(options.vertical_flips)
+C.rot_90 = bool(options.rot_90)
+
