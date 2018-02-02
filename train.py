@@ -46,9 +46,17 @@ C.num_rois = int(options.num_rois)
 if options.input_weight_path:
     C.base_net_weights = options.input_weight_path
  
+ 
+#liesst Annotationfiles
+#   all_imgs: ground_truth Bilddaten
+#   classes_count: Anzahl jeder einzelnen Objektklasse
+#   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
 all_imgs, classes_count, class_mapping = get_data(options.train_path)
 
+#fügt background klasse hinzu
 if 'bg' not in classes_count:
-    print('lel')
     classes_count['bg'] = 0
     class_mapping['bg'] = len(class_mapping)
+
+#persist class_mapping in config
+C.class_mapping = class_mapping
