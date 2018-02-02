@@ -53,7 +53,7 @@ if options.input_weight_path:
 #   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
 all_imgs, classes_count, class_mapping = get_data(options.train_path)
 
-#fügt background klasse hinzu
+#fuegt background klasse hinzu
 if 'bg' not in classes_count:
     classes_count['bg'] = 0
     class_mapping['bg'] = len(class_mapping)
