@@ -8,6 +8,7 @@ from keras import backend as K
 from keras.models import Model
 from keras.layers import Input
 from keras.optimizers import SGD
+from keras.utils import generic_utils
 
 from keras_frcnn import config, data_generators
 from keras_frcnn.pascal_voc_parser import get_data
@@ -121,11 +122,38 @@ model_classifier = Model([img_input, roi_input], classifier)
 # this is a model that holds both the RPN and the classifier, used to load/save weights for the models
 model_all = Model([img_input, roi_input], rpn + classifier)
 
+
+
+#==============================================================================
+# try:
+# 	print('loading weights from {}'.format(C.base_net_weights))
+# 	model_rpn.load_weights(C.base_net_weights, by_name=True)
+# 	model_classifier.load_weights(C.base_net_weights, by_name=True)
+# except:
+# 	print('Could not load pretrained model weights. Weights can be found in the keras application folder \
+# 		https://github.com/fchollet/keras/tree/master/keras/applications')
+# 
+#==============================================================================
+
+
+
 #Modelle kompilieren
 model_rpn.compile(optimizer=SGD(lr=0.001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
 model_classifier.compile(optimizer=SGD(lr=0.001), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
 model_all.compile(optimizer='sgd', loss='mae')
 
-model_rpn.summary()
-model_classifier.summary()
 model_all.summary()
+
+epoch_length = 1000
+num_epochs = int(options.num_epochs)
+iter_num = 0
+
+best_loss = np.Inf
+losses = np.zeros((epoch_length, 5))
+
+
+print('Starting training')
+for epoch_num in range(num_epochs):
+
+	progbar = generic_utils.Progbar(epoch_length)
+	print('Epoch {}/{}'.format(epoch_num + 1, num_epochs))
