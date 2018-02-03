@@ -113,3 +113,10 @@ rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
 
 #RoI Klassifikator 
 classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
+
+
+model_rpn = Model(img_input, rpn)
+model_classifier = Model([img_input, roi_input], classifier)
+
+# this is a model that holds both the RPN and the classifier, used to load/save weights for the models
+model_all = Model([img_input, roi_input], rpn + classifier)

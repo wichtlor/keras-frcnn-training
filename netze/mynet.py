@@ -1,17 +1,22 @@
-from keras.layers import Flatten, Dense, Input, Conv2D, MaxPooling2D, Dropout
+from keras.layers import Flatten, Dense, Conv2D, MaxPooling2D, Dropout
 from keras.layers import TimeDistributed
 from keras_frcnn.RoiPoolingConv import RoiPoolingConv
-from keras import backend as K
 
 
 def get_img_output_length(width, height):
+    '''
+    Abhängig von der Stridegroesse der Basis Layer wird die height und width der resultierenden Feature Map nach
+    Anwendung der Basis Layer auf das Bild zurueckgegeben.
+    '''
     def get_output_length(input_length):
         return input_length//16
 
     return get_output_length(width), get_output_length(height)
     
 def nn_base(img_input, trainable=False):
-
+    '''
+    Definition der Basis Layer.
+    '''
     # Block 1
     x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(img_input)
     x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
@@ -42,7 +47,11 @@ def nn_base(img_input, trainable=False):
     return x
     
 def rpn(base_layers, num_anchors, trainable=False):
-
+    '''
+    Definiert das Region Proposal Netzwerk. Auf den base_layers wird ein weiterer feature extractor hinzugefügt auf dem
+    dann Objectness Scores und BBox Regression stattfinden.
+    '''
+    
     x = Conv2D(512, (3, 3), padding='same', activation='relu', kernel_initializer='normal', name='rpn_conv1')(base_layers)
 
     x_class = Conv2D(num_anchors, (1, 1), activation='sigmoid', kernel_initializer='uniform', name='rpn_out_class')(x)
