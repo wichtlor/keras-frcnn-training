@@ -48,7 +48,7 @@ def nn_base(img_input, trainable=False):
     
 def rpn(base_layers, num_anchors, trainable=False):
     '''
-    Definiert das Region Proposal Netzwerk. Auf den base_layers wird ein weiterer feature extractor hinzugefügt auf dem
+    Definiert das Region Proposal Netzwerk. Auf den base_layers wird ein weiterer feature extractor hinzugefuegt auf dem
     dann Objectness Scores und BBox Regression stattfinden.
     '''
     
