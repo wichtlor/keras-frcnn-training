@@ -5,7 +5,7 @@ from keras_frcnn.RoiPoolingConv import RoiPoolingConv
 
 def get_img_output_length(width, height):
     '''
-    Abhängig von der Stridegroesse der Basis Layer wird die height und width der resultierenden Feature Map nach
+    Abhaengig von der Stridegroesse der Basis Layer wird die height und width der resultierenden Feature Map nach
     Anwendung der Basis Layer auf das Bild zurueckgegeben.
     '''
     def get_output_length(input_length):
