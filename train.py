@@ -111,7 +111,7 @@ shared_layers = nn.nn_base(img_input, trainable=True)
 
 # define the RPN, built on the base layers
 num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
-rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
+rpn = nn.rpn(shared_layers, num_anchors, trainable=False)
 
 #RoI Klassifikator 
 classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
@@ -141,7 +141,6 @@ model_all = Model([img_input, roi_input], rpn + classifier)
 model_rpn.compile(optimizer=SGD(lr=0.001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
 model_classifier.compile(optimizer=SGD(lr=0.001), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
 model_all.compile(optimizer='sgd', loss='mae')
-
 model_all.summary()
 
 epoch_length = 1000
