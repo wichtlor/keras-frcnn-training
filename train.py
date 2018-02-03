@@ -11,6 +11,7 @@ from keras.optimizers import SGD
 
 from keras_frcnn import config, data_generators
 from keras_frcnn.pascal_voc_parser import get_data
+from keras_frcnn import losses as losses
 
 parser = OptionParser()
 
@@ -114,9 +115,13 @@ rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
 #RoI Klassifikator 
 classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
 
-
+#Instantiierung der Modelle
 model_rpn = Model(img_input, rpn)
 model_classifier = Model([img_input, roi_input], classifier)
-
 # this is a model that holds both the RPN and the classifier, used to load/save weights for the models
 model_all = Model([img_input, roi_input], rpn + classifier)
+
+#Modelle kompilieren
+model_rpn.compile(optimizer=SGD(lr=0.001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
+model_classifier.compile(optimizer=SGD(lr=0.001), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
+model_all.compile(optimizer='sgd', loss='mae')
