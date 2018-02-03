@@ -94,16 +94,22 @@ val_imgs = [s for s in all_imgs if s['imageset'] == 'test']
 print('Num train samples {}'.format(len(train_imgs)))
 print('Num val samples {}'.format(len(val_imgs)))
 
-
-
-
+#
 data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 data_gen_val = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
 
 #Netz-Eingabetensor
-input_shape_img = (None, None, 3)
+input_shape_img = (None, None, 3) #width*height*colorchannel
 img_input = Input(shape=input_shape_img)
 
+roi_input = Input(shape=(None, 4)) #center_x,center_y,width,height
 
 # define the base network (resnet here, can be VGG, Inception, etc)
 shared_layers = nn.nn_base(img_input, trainable=True)
+
+# define the RPN, built on the base layers
+num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
+rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
+
+#RoI Klassifikator 
+classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)

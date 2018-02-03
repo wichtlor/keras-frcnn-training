@@ -40,3 +40,37 @@ def nn_base(img_input, trainable=False):
     x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3')(x)
 
     return x
+    
+def rpn(base_layers, num_anchors, trainable=False):
+
+    x = Conv2D(512, (3, 3), padding='same', activation='relu', kernel_initializer='normal', name='rpn_conv1')(base_layers)
+
+    x_class = Conv2D(num_anchors, (1, 1), activation='sigmoid', kernel_initializer='uniform', name='rpn_out_class')(x)
+    x_regr = Conv2D(num_anchors * 4, (1, 1), activation='linear', kernel_initializer='zero', name='rpn_out_regress')(x)
+
+    return [x_class, x_regr]
+
+
+def classifier(base_layers, input_rois, num_rois, nb_classes = 21, trainable=False):
+    '''
+    Definiert das Klassifikator Netzwerk. Der RoI Pooling Layer baut auf den base_layers und den input_rois auf. Darauf
+    folgen TimeDistributed Layer (Keras Layer Wrapper), mit der die RoIs (Anzahl gegeben durch num_rois) parallel durch
+    fully-connected Layer bis zur Klassifikation und Regression durchpropagiert werden.
+    '''
+    #pooling_regions = 7 resultiert in 7*7 pools
+    pooling_regions = 7
+
+    out_roi_pool = RoiPoolingConv(pooling_regions, num_rois)([base_layers, input_rois])
+
+    #Die Eingabe (out_roi_pool) in die TimeDistributed Layer ist: (1, num_rois, channels, pooling_regions, pooling_regions)
+    out = TimeDistributed(Flatten(name='flatten'))(out_roi_pool)
+    out = TimeDistributed(Dense(4096, activation='relu', name='fc1'))(out)
+    out = TimeDistributed(Dropout(0.5))(out)
+    out = TimeDistributed(Dense(4096, activation='relu', name='fc2'))(out)
+    out = TimeDistributed(Dropout(0.5))(out)
+
+    out_class = TimeDistributed(Dense(nb_classes, activation='softmax', kernel_initializer='zero'), name='dense_class_{}'.format(nb_classes))(out)
+    # note: no regression target for bg class
+    out_regr = TimeDistributed(Dense(4 * (nb_classes-1), activation='linear', kernel_initializer='zero'), name='dense_regress_{}'.format(nb_classes))(out)
+
+    return [out_class, out_regr]
