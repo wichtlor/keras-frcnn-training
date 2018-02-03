@@ -13,9 +13,10 @@ def get_img_output_length(width, height):
 def nn_base(input_tensor=(None, None, 3), trainable=False):
     # Determine proper input shape
     input_shape = (None, None, 3)
-    
+    print('LoL')
     if input_tensor is None:
         img_input = Input(shape=input_shape)
+        print('LEL')
     else:
         if not K.is_keras_tensor(input_tensor):
             img_input = Input(tensor=input_tensor, shape=input_shape)
