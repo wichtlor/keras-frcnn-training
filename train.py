@@ -125,3 +125,7 @@ model_all = Model([img_input, roi_input], rpn + classifier)
 model_rpn.compile(optimizer=SGD(lr=0.001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
 model_classifier.compile(optimizer=SGD(lr=0.001), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
 model_all.compile(optimizer='sgd', loss='mae')
+
+model_rpn.summary()
+model_classifier.summary()
+model_all.summary()
