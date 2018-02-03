@@ -10,7 +10,7 @@ def get_img_output_length(width, height):
 
     return get_output_length(width), get_output_length(height)
     
-def nn_base(input_tensor=(None, None, 3), trainable=False):
+def nn_base(input_tensor, trainable=False):
     # Determine proper input shape
     input_shape = (None, None, 3)
     print('LoL')
@@ -23,3 +23,4 @@ def nn_base(input_tensor=(None, None, 3), trainable=False):
             print('blablablab')
         else:
             img_input = input_tensor
+            print('jaja')
