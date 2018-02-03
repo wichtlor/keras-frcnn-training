@@ -111,7 +111,7 @@ shared_layers = nn.nn_base(img_input, trainable=True)
 
 # define the RPN, built on the base layers
 num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
-rpn = nn.rpn(shared_layers, num_anchors, trainable=False)
+rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
 
 #RoI Klassifikator 
 classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
@@ -154,5 +154,20 @@ losses = np.zeros((epoch_length, 5))
 print('Starting training')
 for epoch_num in range(num_epochs):
 
-	progbar = generic_utils.Progbar(epoch_length)
-	print('Epoch {}/{}'.format(epoch_num + 1, num_epochs))
+    progbar = generic_utils.Progbar(epoch_length)
+    print('Epoch {}/{}'.format(epoch_num + 1, num_epochs))
+    
+    while True: #add early stopping
+
+        try:
+            X, Y, img_data = next(data_gen_train)
+            
+#            loss_rpn = model_rpn.train_on_batch(X, Y)
+            
+#            P_rpn = model_rpn.predict_on_batch(X)
+            
+            
+        except Exception as e:
+            print('Exception: {}'.format(e))
+            continue
+        
