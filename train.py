@@ -195,10 +195,8 @@ iter_num = 0
 
 best_loss = np.Inf
 train_losses = np.zeros((epoch_length, 5))
-#==============================================================================
-# rpn_accuracy_rpn_monitor_train = []
-# rpn_accuracy_for_epoch_train = []
-#==============================================================================
+rpn_accuracy_rpn_monitor_train = []
+rpn_accuracy_for_epoch_train = []
 start_time = time.time()
 
 print('Starting training')
@@ -211,16 +209,14 @@ for epoch_num in range(num_epochs):
 
         try:
             
-#==============================================================================
-#             #???
-#             if len(rpn_accuracy_rpn_monitor_train) == epoch_length and C.verbose:
-#                 mean_overlapping_bboxes = float(sum(rpn_accuracy_rpn_monitor_train))/len(rpn_accuracy_rpn_monitor_train)
-#                 rpn_accuracy_rpn_monitor_train = []
-#                 print('Average number of overlapping bounding boxes from RPN = {} for {} previous iterations'.format(mean_overlapping_bboxes, epoch_length))
-#                 if mean_overlapping_bboxes == 0:
-#                     print('RPN is not producing bounding boxes that overlap the ground truth boxes. Check RPN settings or keep training.')
-# 
-#==============================================================================
+            #???
+            if len(rpn_accuracy_rpn_monitor_train) == epoch_length and C.verbose:
+                mean_overlapping_bboxes = float(sum(rpn_accuracy_rpn_monitor_train))/len(rpn_accuracy_rpn_monitor_train)
+                rpn_accuracy_rpn_monitor_train = []
+                print('Average number of overlapping bounding boxes from RPN = {} for {} previous iterations'.format(mean_overlapping_bboxes, epoch_length))
+                if mean_overlapping_bboxes == 0:
+                    print('RPN is not producing bounding boxes that overlap the ground truth boxes. Check RPN settings or keep training.')
+
 
             #X:
             #Y:
@@ -246,10 +242,8 @@ for epoch_num in range(num_epochs):
             
             #wenn keine RoI gefunden wurde
             if X2 is None:
-#==============================================================================
-#                 rpn_accuracy_rpn_monitor_train.append(0)
-#                 rpn_accuracy_for_epoch_train.append(0)
-#==============================================================================
+                rpn_accuracy_rpn_monitor_train.append(0)
+                rpn_accuracy_for_epoch_train.append(0)
                 continue
             
             selected_rois_train = select_rois_for_detection(Y1)
