@@ -357,6 +357,9 @@ for epoch_num in range(num_epochs):
 
 
                         break
+           
+
+                break
             
             
         except Exception as e:
