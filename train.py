@@ -150,6 +150,8 @@ iter_num = 0
 best_loss = np.Inf
 losses = np.zeros((epoch_length, 5))
 
+print(model_rpn.metrics_names)
+print(model_classifier.metrics_names)
 
 print('Starting training')
 for epoch_num in range(num_epochs):
@@ -162,9 +164,14 @@ for epoch_num in range(num_epochs):
         try:
             X, Y, img_data = next(data_gen_train)
             
-#            loss_rpn = model_rpn.train_on_batch(X, Y)
+            #train rpn und get rpn_loss_train
+            loss_rpn = model_rpn.train_on_batch(X, Y)
+            P_rpn = model_rpn.predict_on_batch(X)
+            #train detektor, get det_loss_train
             
-#            P_rpn = model_rpn.predict_on_batch(X)
+                        
+            losses[iter_num, 0] = loss_rpn[1]
+            losses[iter_num, 1] = loss_rpn[2]
             
             iter_num += 1
 
@@ -172,6 +179,11 @@ for epoch_num in range(num_epochs):
 									  ('detector_cls', np.mean(losses[:iter_num, 2])), ('detector_regr', np.mean(losses[:iter_num, 3]))])
 
             if iter_num == epoch_length:
+                
+                #get rpn_loss_val
+                #get det_loss_val
+                
+                iter_num = 0
                 break
             
             
