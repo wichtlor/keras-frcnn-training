@@ -148,7 +148,7 @@ num_epochs = int(options.num_epochs)
 iter_num = 0
 
 best_loss = np.Inf
-losses = np.zeros((epoch_length, 5))
+losses = np.zeros((epoch_length, 6))
 
 print(model_rpn.metrics_names)
 print(model_classifier.metrics_names)
@@ -169,14 +169,14 @@ for epoch_num in range(num_epochs):
             P_rpn = model_rpn.predict_on_batch(X)
             #train detektor, get det_loss_train
             
-            pprint.pprint(loss_rpn[0])
-            losses[iter_num, 0] = loss_rpn[1]
-            losses[iter_num, 1] = loss_rpn[2]
+            losses[iter_num, 0] = loss_rpn[0]
+            losses[iter_num, 1] = loss_rpn[1]
+            losses[iter_num, 2] = loss_rpn[2]
             
             iter_num += 1
 
-            progbar.update(iter_num, [('rpn_cls', np.mean(losses[:iter_num, 0])), ('rpn_regr', np.mean(losses[:iter_num, 1])),
-									  ('detector_cls', np.mean(losses[:iter_num, 2])), ('detector_regr', np.mean(losses[:iter_num, 3]))])
+            progbar.update(iter_num, [('rpn_total_loss', np.mean(losses[:iter_num, 0])), ('rpn_cls', np.mean(losses[:iter_num, 1])), ('rpn_regr', np.mean(losses[:iter_num, 2])),
+									  ('detector_cls', np.mean(losses[:iter_num, 3])), ('detector_regr', np.mean(losses[:iter_num, 4]))])
 
             if iter_num == epoch_length:
                 
