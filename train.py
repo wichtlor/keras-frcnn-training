@@ -169,7 +169,7 @@ for epoch_num in range(num_epochs):
             P_rpn = model_rpn.predict_on_batch(X)
             #train detektor, get det_loss_train
             
-                        
+            pprint.pprint(loss_rpn[0])
             losses[iter_num, 0] = loss_rpn[1]
             losses[iter_num, 1] = loss_rpn[2]
             
