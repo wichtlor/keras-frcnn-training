@@ -195,8 +195,10 @@ iter_num = 0
 
 best_loss = np.Inf
 train_losses = np.zeros((epoch_length, 5))
-rpn_accuracy_rpn_monitor_train = []
-rpn_accuracy_for_epoch_train = []
+#==============================================================================
+# rpn_accuracy_rpn_monitor_train = []
+# rpn_accuracy_for_epoch_train = []
+#==============================================================================
 start_time = time.time()
 
 print('Starting training')
@@ -302,23 +304,27 @@ for epoch_num in range(num_epochs):
                 #validation
                 progbar2 = generic_utils.Progbar(val_on_num_pictures)
                 while True:
+                    print('validation start')
                     X_val, Y_val, img_data_val = next(data_gen_val)
+                    print('got data')
                     #get rpn_val_loss
                     rpn_val_loss = model_rpn.test_on_batch(X_val, Y_val)
+                    print('rpn loss')
                     #get rpn predictions fuer detektor validation
                     predict_rpn_val = model_rpn.predict_on_batch(X_val)
+                    print('rpn pred')
                     R = roi_helpers.rpn_to_roi(predict_rpn_val[0], predict_rpn_val[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
                     
                     X2_val, Y1_val, Y2_val, IouS_val = roi_helpers.calc_iou(R, img_data_val, C, class_mapping)
-                
+                    print('...')
                     #wenn keine RoI gefunden wurde
                     if X2_val is None:
                         continue
                     
                     selected_rois_val = select_rois_for_detection(Y1_val)
                     #get det_val_loss
-                    det_val_loss = model_classifier.train_on_batch([X, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]])
-
+                    det_val_loss = model_classifier.test_on_batch([X, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]])
+                    print('detektor validation')
                     #speicher rpn losses
                     val_losses[val_iter, 0] = rpn_val_loss[1]
                     val_losses[val_iter, 1] = rpn_val_loss[2]
