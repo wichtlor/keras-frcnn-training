@@ -1,6 +1,7 @@
 import random
 import pickle
 import pprint
+import time
 import numpy as np
 from optparse import OptionParser
 
@@ -13,6 +14,7 @@ from keras.utils import generic_utils
 from keras_frcnn import config, data_generators
 from keras_frcnn.pascal_voc_parser import get_data
 from keras_frcnn import losses as losses
+from keras_frcnn import roi_helpers as roi_helpers
 
 parser = OptionParser()
 
@@ -148,10 +150,10 @@ num_epochs = int(options.num_epochs)
 iter_num = 0
 
 best_loss = np.Inf
-losses = np.zeros((epoch_length, 6))
-
-print(model_rpn.metrics_names)
-print(model_classifier.metrics_names)
+losses = np.zeros((epoch_length, 5))
+rpn_accuracy_rpn_monitor = []
+rpn_accuracy_for_epoch = []
+start_time = time.time()
 
 print('Starting training')
 for epoch_num in range(num_epochs):
@@ -159,35 +161,136 @@ for epoch_num in range(num_epochs):
     progbar = generic_utils.Progbar(epoch_length)
     print('Epoch {}/{}'.format(epoch_num + 1, num_epochs))
     
-    while True: #add early stopping
+    while True: #add early stopping for rpn and det
 
         try:
+            
+            #
+            if len(rpn_accuracy_rpn_monitor) == epoch_length and C.verbose:
+                mean_overlapping_bboxes = float(sum(rpn_accuracy_rpn_monitor))/len(rpn_accuracy_rpn_monitor)
+                rpn_accuracy_rpn_monitor = []
+                print('Average number of overlapping bounding boxes from RPN = {} for {} previous iterations'.format(mean_overlapping_bboxes, epoch_length))
+                if mean_overlapping_bboxes == 0:
+                    print('RPN is not producing bounding boxes that overlap the ground truth boxes. Check RPN settings or keep training.')
+
+
+            #X:
+            #Y:
+            #img_data:
             X, Y, img_data = next(data_gen_train)
             
             #train rpn und get rpn_loss_train
             loss_rpn = model_rpn.train_on_batch(X, Y)
-            P_rpn = model_rpn.predict_on_batch(X)
-            #train detektor, get det_loss_train
             
-            losses[iter_num, 0] = loss_rpn[0]
-            losses[iter_num, 1] = loss_rpn[1]
-            losses[iter_num, 2] = loss_rpn[2]
+            #rpn predictions
+            P_rpn = model_rpn.predict_on_batch(X)
+            
+            #rpn predictions umformen zu RoI
+            R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
+            
+            #X2: RoIs mit Koordinaten (x1, y1, w, h)
+            #Y1: Ground truth Klassenlabel der RoIs [0,0,...,0,1,0,0]. Array mit .shape (1, num_rois, num_classes)
+            #Y2: Ground truth regression targets der RoIs ohne die Background Klasse:
+            #    y_class_regr_label und y_class_regr_coords in einem Array mit .shape = (1, num_rois, (4*num_classes-1)+(4*num_classes-1))
+            #IouS: for debugging only
+            # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
+            X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data, C, class_mapping)            
+            
+            #wenn keine RoI gefunden wurde
+            if X2 is None:
+                rpn_accuracy_rpn_monitor.append(0)
+                rpn_accuracy_for_epoch.append(0)
+                continue
+            
+            #Background oder Objekt
+            neg_samples = np.where(Y1[0, :, -1] == 1)
+            pos_samples = np.where(Y1[0, :, -1] == 0)
+            if len(neg_samples) > 0:
+                neg_samples = neg_samples[0]
+            else:
+                neg_samples = []
+            if len(pos_samples) > 0:
+                pos_samples = pos_samples[0]
+            else:
+                pos_samples = []
+
+            rpn_accuracy_rpn_monitor.append(len(pos_samples))
+            rpn_accuracy_for_epoch.append((len(pos_samples)))
+
+            #Background und Objekt RoIs werden ausgewaehlt und ergeben die Batch fuer den Klassifikator
+            if C.num_rois > 1:
+                if len(pos_samples) < C.num_rois//2:
+                    selected_pos_samples = pos_samples.tolist()
+                else:
+                    selected_pos_samples = np.random.choice(pos_samples, C.num_rois//2, replace=False).tolist()
+                try:
+                    selected_neg_samples = np.random.choice(neg_samples, C.num_rois - len(selected_pos_samples), replace=False).tolist()
+                except:
+                    selected_neg_samples = np.random.choice(neg_samples, C.num_rois - len(selected_pos_samples), replace=True).tolist()
+
+                sel_samples = selected_pos_samples + selected_neg_samples
+            else:
+                # in the extreme case where num_rois = 1, we pick a random pos or neg sample
+                selected_pos_samples = pos_samples.tolist()
+                selected_neg_samples = neg_samples.tolist()
+                if np.random.randint(0, 2): 
+                    sel_samples = random.choice(neg_samples)
+                else:
+                    sel_samples = random.choice(pos_samples)           
+    
+            
+            #train detektor und get det_loss_train
+            loss_det = model_classifier.train_on_batch([X, X2[:, sel_samples, :]], [Y1[:, sel_samples, :], Y2[:, sel_samples, :]])
+
+            #speicher rpn losses
+            losses[iter_num, 0] = loss_rpn[1]
+            losses[iter_num, 1] = loss_rpn[2]
+            #speicher detektor losses
+            losses[iter_num, 2] = loss_det[1]
+            losses[iter_num, 3] = loss_det[2]
+            losses[iter_num, 4] = loss_det[3]
             
             iter_num += 1
 
-            progbar.update(iter_num, [('rpn_total_loss', np.mean(losses[:iter_num, 0])), ('rpn_cls', np.mean(losses[:iter_num, 1])), ('rpn_regr', np.mean(losses[:iter_num, 2])),
-									  ('detector_cls', np.mean(losses[:iter_num, 3])), ('detector_regr', np.mean(losses[:iter_num, 4]))])
+            progbar.update(iter_num, [('rpn_cls', np.mean(losses[:iter_num, 0])), ('rpn_regr', np.mean(losses[:iter_num, 1])),
+									  ('detector_cls', np.mean(losses[:iter_num, 2])), ('detector_regr', np.mean(losses[:iter_num, 3]))])
 
             if iter_num == epoch_length:
                 
                 #get rpn_loss_val
                 #get det_loss_val
+                loss_rpn_cls = np.mean(losses[:, 0])
+                loss_rpn_regr = np.mean(losses[:, 1])
+                loss_class_cls = np.mean(losses[:, 2])
+                loss_class_regr = np.mean(losses[:, 3])
+                class_acc = np.mean(losses[:, 4])
                 
+                mean_overlapping_bboxes = float(sum(rpn_accuracy_for_epoch)) / len(rpn_accuracy_for_epoch) #??
+                rpn_accuracy_for_epoch = [] #??
+                
+                if C.verbose:
+                    print('Mean number of bounding boxes from RPN overlapping ground truth boxes: {}'.format(mean_overlapping_bboxes))
+                    print('Classifier accuracy for bounding boxes from RPN: {}'.format(class_acc))
+                    print('Loss RPN classifier: {}'.format(loss_rpn_cls))
+                    print('Loss RPN regression: {}'.format(loss_rpn_regr))
+                    print('Loss Detector classifier: {}'.format(loss_class_cls))
+                    print('Loss Detector regression: {}'.format(loss_class_regr))
+                    print('Elapsed time: {}'.format(time.time() - start_time))
+                
+                curr_loss = loss_rpn_cls + loss_rpn_regr + loss_class_cls + loss_class_regr
+                
+                start_time = time.time()                
                 iter_num = 0
+                
+                if curr_loss < best_loss: #anpassen an validation loss
+                    if C.verbose:
+                        print('Total loss decreased from {} to {}, saving weights'.format(best_loss,curr_loss))
+                        best_loss = curr_loss
+                        model_all.save_weights(C.model_path)
                 break
             
             
         except Exception as e:
             print('Exception: {}'.format(e))
             continue
-        
+print('Training complete, exiting.')
