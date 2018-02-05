@@ -319,7 +319,7 @@ for epoch_num in range(num_epochs):
                     
                     selected_rois_val = select_rois_for_detection(Y1_val)
                     #get det_val_loss
-                    det_val_loss = model_classifier.test_on_batch([X, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]])
+                    det_val_loss = model_classifier.test_on_batch([X_val, X2_val[:, selected_rois_val, :]], [Y1_val[:, selected_rois_val, :], Y2_val[:, selected_rois_val, :]])
                     print('hello?')
                     #speicher rpn losses
                     val_losses[val_iter, 0] = rpn_val_loss[1]
