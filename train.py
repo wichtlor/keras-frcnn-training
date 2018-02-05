@@ -293,7 +293,7 @@ for epoch_num in range(num_epochs):
                 
                 
                 val_iter = 0
-                val_on_num_pictures = 1000 #data generator umschreiben um auf allen validation images jedes mal zu validieren
+                val_on_num_pictures = 400 #data generator umschreiben um auf allen validation images jedes mal zu validieren
                 val_losses = np.zeros((val_on_num_pictures, 5))
                 #validation
                 print('validation start')
