@@ -328,7 +328,7 @@ for epoch_num in range(num_epochs):
                     val_losses[val_iter, 4] = det_val_loss[3]
                     
                     val_iter += 1
-                    progbar2.update(iter_num, [('rpn_cls_val', np.mean(val_losses[:val_iter, 0])), ('rpn_regr_val', np.mean(val_losses[:val_iter, 1])),
+                    progbar2.update(val_iter, [('rpn_cls_val', np.mean(val_losses[:val_iter, 0])), ('rpn_regr_val', np.mean(val_losses[:val_iter, 1])),
 									  ('detector_cls_val', np.mean(val_losses[:val_iter, 2])), ('detector_regr_val', np.mean(val_losses[:val_iter, 3]))])
 
                     if val_iter == val_on_num_pictures:
