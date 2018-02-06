@@ -4,6 +4,7 @@ import pprint
 import time
 import numpy as np
 from optparse import OptionParser
+import matplotlib.pyplot as plt
 
 from keras import backend as K
 from keras.models import Model
@@ -55,7 +56,12 @@ def select_rois_for_detection(Y1):
             sel_samples = random.choice(pos_samples) 
     return sel_samples
     
-
+def plot_loss(loss_array, loss_name):
+    fig, ax = plt.subplots()
+    ax.plot(loss_array)
+    ax.set(xlabel='epoch', ylabel='loss', title=loss_name)
+    ax.grid()
+    fig.savefig('{}.png'.format(loss_name))
 
 parser = OptionParser()
 
@@ -195,6 +201,8 @@ iter_num = 0
 
 best_loss = np.Inf
 train_losses = np.zeros((epoch_length, 5))
+epoch_mean_losses = np.zeros((num_epochs, 10))
+
 rpn_accuracy_rpn_monitor_train = []
 rpn_accuracy_for_epoch_train = []
 start_time = time.time()
@@ -267,35 +275,35 @@ for epoch_num in range(num_epochs):
             #Ende der Epoche
             if iter_num == epoch_length:
 
-                train_loss_rpn_cls = np.mean(train_losses[:, 0])
-                train_loss_rpn_regr = np.mean(train_losses[:, 1])
-                train_loss_class_cls = np.mean(train_losses[:, 2])
-                train_loss_class_regr = np.mean(train_losses[:, 3])
-                train_class_acc = np.mean(train_losses[:, 4])
+                epoch_mean_losses[epoch_num,0] = np.mean(train_losses[:, 0])
+                epoch_mean_losses[epoch_num,1] = np.mean(train_losses[:, 1])
+                epoch_mean_losses[epoch_num,2] = np.mean(train_losses[:, 2])
+                epoch_mean_losses[epoch_num,3] = np.mean(train_losses[:, 3])
+                epoch_mean_losses[epoch_num,4] = np.mean(train_losses[:, 4])
                 
                 mean_overlapping_bboxes = float(sum(rpn_accuracy_for_epoch_train)) / len(rpn_accuracy_for_epoch_train) #??
                 rpn_accuracy_for_epoch_train = [] #??
                 
-                if C.verbose:
-                    print('Mean number of bounding boxes from RPN overlapping ground truth boxes: {}'.format(mean_overlapping_bboxes))
-                    print('Classifier accuracy for bounding boxes from RPN: {}'.format(train_class_acc))
-                    print('Loss RPN classifier: {}'.format(train_loss_rpn_cls))
-                    print('Loss RPN regression: {}'.format(train_loss_rpn_regr))
-                    print('Loss Detector classifier: {}'.format(train_loss_class_cls))
-                    print('Loss Detector regression: {}'.format(train_loss_class_regr))
-                    print('Elapsed time: {}'.format(time.time() - start_time))
+
+                print('Mean number of bounding boxes from RPN overlapping ground truth boxes: {}'.format(mean_overlapping_bboxes))
+                print('Classifier accuracy for bounding boxes from RPN: {}'.format(epoch_mean_losses[epoch_num,4]))
+                print('Loss RPN classifier: {}'.format(epoch_mean_losses[epoch_num,0]))
+                print('Loss RPN regression: {}'.format(epoch_mean_losses[epoch_num,1]))
+                print('Loss Detector classifier: {}'.format(epoch_mean_losses[epoch_num,2]))
+                print('Loss Detector regression: {}'.format(epoch_mean_losses[epoch_num,3]))
+                print('Elapsed time: {}'.format(time.time() - start_time))
                 
-                curr_loss = train_loss_rpn_cls + train_loss_rpn_regr + train_loss_class_cls + train_loss_class_regr
+                curr_loss = epoch_mean_losses[epoch_num,0] + epoch_mean_losses[epoch_num,1] + epoch_mean_losses[epoch_num,2] + epoch_mean_losses[epoch_num,3]
                 print('Current Training Loss is: {}'.format(curr_loss))
                 
                 start_time = time.time()                
                 iter_num = 0
                 
                 
-                val_iter = 0
-                val_on_num_pictures = 400 #data generator umschreiben um auf allen validation images jedes mal zu validieren
-                val_losses = np.zeros((val_on_num_pictures, 5))
                 #validation
+                val_iter = 0
+                val_on_num_pictures = 400 #Anzahl der Batches (Bilder in diesem Fall) auf denen validiert werden soll
+                val_losses = np.zeros((val_on_num_pictures, 5))
                 print('validation start')
                 progbar2 = generic_utils.Progbar(val_on_num_pictures)
                 while True:
@@ -332,30 +340,41 @@ for epoch_num in range(num_epochs):
                     progbar2.update(val_iter, [('rpn_cls_val', np.mean(val_losses[:val_iter, 0])), ('rpn_regr_val', np.mean(val_losses[:val_iter, 1])),
 									  ('detector_cls_val', np.mean(val_losses[:val_iter, 2])), ('detector_regr_val', np.mean(val_losses[:val_iter, 3]))])
 
+                    #Ende der Validation
                     if val_iter == val_on_num_pictures:
-                        val_loss_rpn_cls = np.mean(val_losses[:, 0])
-                        val_loss_rpn_regr = np.mean(val_losses[:, 1])
-                        val_loss_class_cls = np.mean(val_losses[:, 2])
-                        val_loss_class_regr = np.mean(val_losses[:, 3])
-                        val_class_acc = np.mean(val_losses[:, 4])
                         
-                        if C.verbose:
-                            print('Mean number of bounding boxes from RPN overlapping ground truth boxes: {}'.format(mean_overlapping_bboxes))
-                            print('Classifier accuracy for bounding boxes from RPN: {}'.format(val_class_acc))
-                            print('Loss RPN classifier: {}'.format(val_loss_rpn_cls))
-                            print('Loss RPN regression: {}'.format(val_loss_rpn_regr))
-                            print('Loss Detector classifier: {}'.format(val_loss_class_cls))
-                            print('Validation Loss Detector regression: {}'.format(val_loss_class_regr))
+                        epoch_mean_losses[epoch_num,5] = np.mean(val_losses[:, 0])
+                        epoch_mean_losses[epoch_num,6] = np.mean(val_losses[:, 1])
+                        epoch_mean_losses[epoch_num,7] = np.mean(val_losses[:, 2])
+                        epoch_mean_losses[epoch_num,8] = np.mean(val_losses[:, 3])
+                        epoch_mean_losses[epoch_num,9] = np.mean(val_losses[:, 4])
+
+                        
+                        print('Validation Mean number of bounding boxes from RPN overlapping ground truth boxes: {}'.format(mean_overlapping_bboxes))
+                        print('Validation Classifier accuracy for bounding boxes from RPN: {}'.format(epoch_mean_losses[epoch_num,9]))
+                        print('Validation Loss RPN classifier: {}'.format(epoch_mean_losses[epoch_num,5]))
+                        print('Validation Loss RPN regression: {}'.format(epoch_mean_losses[epoch_num,6]))
+                        print('Validation Loss Detector classifier: {}'.format(epoch_mean_losses[epoch_num,7]))
+                        print('Validation Loss Detector regression: {}'.format(epoch_mean_losses[epoch_num,8]))
                             
-                        curr_val_loss = val_loss_rpn_cls + val_loss_rpn_regr + val_loss_class_cls + val_loss_class_regr
+                        curr_val_loss = epoch_mean_losses[epoch_num,5] + epoch_mean_losses[epoch_num,6] + epoch_mean_losses[epoch_num,7] + epoch_mean_losses[epoch_num,8]
                         print('Current Validation Loss is: {}'.format(curr_val_loss))
 
                         if curr_val_loss < best_loss: #anpassen an validation loss
-                            if C.verbose:
-                                print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
-                                best_loss = curr_val_loss
-                                model_all.save_weights(C.model_path)
-
+                            print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
+                            best_loss = curr_val_loss
+                            model_all.save_weights(C.model_path)
+                            
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 0], 'train_loss_rpn_cls')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 1], 'train_loss_rpn_regr')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 2], 'train_loss_class_cls')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 3], 'train_loss_class_regr')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 4], 'train_class_acc')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 5], 'val_loss_rpn_cls')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 6], 'val_loss_rpn_regr')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 7], 'val_loss_class_cls')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 8], 'val_loss_class_regr')
+                            plot_loss(epoch_mean_losses[:epoch_num+1, 9], 'val_class_acc')
 
                         break
            
