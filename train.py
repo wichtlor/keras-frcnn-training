@@ -16,7 +16,7 @@ from keras_frcnn.pascal_voc_parser import get_data
 from keras_frcnn import losses as losses
 from keras_frcnn import roi_helpers as roi_helpers
 
-from visualization import plots
+from visualization.plots import save_plots
 
 def select_rois_for_detection(Y1):
     #Background oder Objekt
@@ -298,7 +298,6 @@ for epoch_num in range(num_epochs):
                 
                 
                 #validation
-                val_iter = 0
                 val_on_num_pictures = 400 #Anzahl der Batches (Bilder in diesem Fall) auf denen validiert werden soll
                 val_losses = np.zeros((val_on_num_pictures, 5))
                 print('validation start')
@@ -326,19 +325,19 @@ for epoch_num in range(num_epochs):
                     det_val_loss = model_classifier.test_on_batch([X_val, X2_val[:, selected_rois_val, :]], [Y1_val[:, selected_rois_val, :], Y2_val[:, selected_rois_val, :]])
 
                     #speicher rpn losses
-                    val_losses[val_iter, 0] = rpn_val_loss[1]
-                    val_losses[val_iter, 1] = rpn_val_loss[2]
+                    val_losses[iter_num, 0] = rpn_val_loss[1]
+                    val_losses[iter_num, 1] = rpn_val_loss[2]
                     #speicher detektor losses
-                    val_losses[val_iter, 2] = det_val_loss[1]
-                    val_losses[val_iter, 3] = det_val_loss[2]
-                    val_losses[val_iter, 4] = det_val_loss[3]
+                    val_losses[iter_num, 2] = det_val_loss[1]
+                    val_losses[iter_num, 3] = det_val_loss[2]
+                    val_losses[iter_num, 4] = det_val_loss[3]
                     
-                    val_iter += 1
-                    progbar2.update(val_iter, [('rpn_cls_val', np.mean(val_losses[:val_iter, 0])), ('rpn_regr_val', np.mean(val_losses[:val_iter, 1])),
-									  ('detector_cls_val', np.mean(val_losses[:val_iter, 2])), ('detector_regr_val', np.mean(val_losses[:val_iter, 3]))])
+                    iter_num += 1
+                    progbar2.update(iter_num, [('rpn_cls_val', np.mean(val_losses[:iter_num, 0])), ('rpn_regr_val', np.mean(val_losses[:iter_num, 1])),
+									  ('detector_cls_val', np.mean(val_losses[:iter_num, 2])), ('detector_regr_val', np.mean(val_losses[:iter_num, 3]))])
 
                     #Ende der Validation
-                    if val_iter == val_on_num_pictures:
+                    if iter_num == val_on_num_pictures:
                         
                         epoch_mean_losses[epoch_num,5] = np.mean(val_losses[:, 0])
                         epoch_mean_losses[epoch_num,6] = np.mean(val_losses[:, 1])
@@ -353,7 +352,8 @@ for epoch_num in range(num_epochs):
                         print('Validation Loss RPN regression: {}'.format(epoch_mean_losses[epoch_num,6]))
                         print('Validation Loss Detector classifier: {}'.format(epoch_mean_losses[epoch_num,7]))
                         print('Validation Loss Detector regression: {}'.format(epoch_mean_losses[epoch_num,8]))
-                            
+                        print('Elapsed time: {}'.format(time.time() - start_time))
+                        
                         curr_val_loss = epoch_mean_losses[epoch_num,5] + epoch_mean_losses[epoch_num,6] + epoch_mean_losses[epoch_num,7] + epoch_mean_losses[epoch_num,8]
                         print('Current Validation Loss is: {}'.format(curr_val_loss))
 
@@ -362,7 +362,9 @@ for epoch_num in range(num_epochs):
                             best_loss = curr_val_loss
                             model_all.save_weights(C.model_path + model_name)
 
-                        plots.save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
+                        save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
+                        start_time = time.time()
+                        iter_num = 0
                         break
                 
                 break
