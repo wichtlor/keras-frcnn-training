@@ -61,7 +61,7 @@ def plot_loss(loss_array, loss_name):
     ax.plot(loss_array)
     ax.set(xlabel='epoch', ylabel='loss', title=loss_name)
     ax.grid()
-    fig.savefig('{}.png'.format(loss_name))
+    fig.savefig(C.model_path + '{}.png'.format(loss_name))
 
 parser = OptionParser()
 
@@ -75,8 +75,8 @@ parser.add_option("--rot", "--rot_90", dest="rot_90", help="Augment with 90 degr
 parser.add_option("--num_epochs", type="int", dest="num_epochs", help="Number of epochs.", default=2000)
 parser.add_option("--config_filename", dest="config_filename", help=
 				"Location to store all the metadata related to the training (to be used when testing).",
-				default="config.pickle")
-parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.", default='./model_frcnn.hdf5')
+				default="./train_results/config.pickle")
+parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.", default='./train_results/model_frcnn.hdf5')
 parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
 
 (options, args) = parser.parse_args()
@@ -375,6 +375,9 @@ for epoch_num in range(num_epochs):
                             plot_loss(epoch_mean_losses[:epoch_num+1, 7], 'val_loss_class_cls')
                             plot_loss(epoch_mean_losses[:epoch_num+1, 8], 'val_loss_class_regr')
                             plot_loss(epoch_mean_losses[:epoch_num+1, 9], 'val_class_acc')
+                            
+                            plot_loss(np.sum(epoch_mean_losses[:epoch_num+1,:4],axis=1), 'total_train_loss')
+                            plot_loss(np.sum(epoch_mean_losses[:epoch_num+1,5:9],axis=1), 'total_val_loss')
 
                         break
            
