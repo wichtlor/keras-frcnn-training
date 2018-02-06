@@ -361,14 +361,10 @@ for epoch_num in range(num_epochs):
                             print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
                             best_loss = curr_val_loss
                             model_all.save_weights(C.model_path + model_name)
-                            
-                            plots.save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
-                            
 
-
+                        plots.save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
                         break
-           
-
+                
                 break
             
             
