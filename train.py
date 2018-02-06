@@ -298,7 +298,7 @@ for epoch_num in range(num_epochs):
                 
                 
                 #validation
-                val_on_num_pictures = 400 #Anzahl der Batches (Bilder in diesem Fall) auf denen validiert werden soll
+                val_on_num_pictures = 200 #Anzahl der Batches (Bilder in diesem Fall) auf denen validiert werden soll
                 val_losses = np.zeros((val_on_num_pictures, 5))
                 print('validation start')
                 progbar2 = generic_utils.Progbar(val_on_num_pictures)
@@ -361,8 +361,9 @@ for epoch_num in range(num_epochs):
                             print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
                             best_loss = curr_val_loss
                             model_all.save_weights(C.model_path + model_name)
-
+                        start_time = time.time()
                         save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
+                        print('Saving plots took: {}'.format(time.time() - start_time))
                         start_time = time.time()
                         iter_num = 0
                         break
