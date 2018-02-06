@@ -4,7 +4,6 @@ import pprint
 import time
 import numpy as np
 from optparse import OptionParser
-import matplotlib.pyplot as plt
 
 from keras import backend as K
 from keras.models import Model
@@ -17,6 +16,7 @@ from keras_frcnn.pascal_voc_parser import get_data
 from keras_frcnn import losses as losses
 from keras_frcnn import roi_helpers as roi_helpers
 
+from visualization import plots
 
 def select_rois_for_detection(Y1):
     #Background oder Objekt
@@ -55,13 +55,6 @@ def select_rois_for_detection(Y1):
         else:
             sel_samples = random.choice(pos_samples) 
     return sel_samples
-    
-def plot_loss(loss_array, loss_name):
-    fig, ax = plt.subplots()
-    ax.plot(loss_array)
-    ax.set(xlabel='epoch', ylabel='loss', title=loss_name)
-    ax.grid()
-    fig.savefig(C.model_path + '{}.png'.format(loss_name))
 
 parser = OptionParser()
 
@@ -75,10 +68,10 @@ parser.add_option("--rot", "--rot_90", dest="rot_90", help="Augment with 90 degr
 parser.add_option("--num_epochs", type="int", dest="num_epochs", help="Number of epochs.", default=2000)
 parser.add_option("--config_filename", dest="config_filename", help=
 				"Location to store all the metadata related to the training (to be used when testing).",
-				default="./train_results/config.pickle")
-parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.", default='./train_results/model_frcnn.hdf5')
+				default="config.pickle")
+parser.add_option("--output_model_path", dest="output_model_path", help="Output path for model.", default='./train_results/')
 parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
-
+parser.add_option("--model_name", dest="model_name", help="Output name of model weights.", default='model_frcnn.hdf5')
 (options, args) = parser.parse_args()
 
 
@@ -93,7 +86,8 @@ C.use_vertical_flips = bool(options.vertical_flips)
 C.rot_90 = bool(options.rot_90)
 
 # Speicherpfad des trainierten Modells
-C.model_path = options.output_weight_path
+C.model_path = options.output_model_path
+model_name = options.model_name
 
 #batch size fuer den Detektor
 C.num_rois = int(options.num_rois)
@@ -135,7 +129,7 @@ pprint.pprint(classes_count)
 print('Num classes (including bg) = {}'.format(len(classes_count)))
 
 #name of pickled config file
-config_output_filename = options.config_filename
+config_output_filename = C.model_path + options.config_filename
 with open(config_output_filename, 'wb') as config_f:
 	pickle.dump(C,config_f)
 	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
@@ -363,21 +357,11 @@ for epoch_num in range(num_epochs):
                         if curr_val_loss < best_loss: #anpassen an validation loss
                             print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
                             best_loss = curr_val_loss
-                            model_all.save_weights(C.model_path)
+                            model_all.save_weights(C.model_path + model_name)
                             
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 0], 'train_loss_rpn_cls')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 1], 'train_loss_rpn_regr')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 2], 'train_loss_class_cls')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 3], 'train_loss_class_regr')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 4], 'train_class_acc')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 5], 'val_loss_rpn_cls')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 6], 'val_loss_rpn_regr')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 7], 'val_loss_class_cls')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 8], 'val_loss_class_regr')
-                            plot_loss(epoch_mean_losses[:epoch_num+1, 9], 'val_class_acc')
+                            plots.save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
                             
-                            plot_loss(np.sum(epoch_mean_losses[:epoch_num+1,:4],axis=1), 'total_train_loss')
-                            plot_loss(np.sum(epoch_mean_losses[:epoch_num+1,5:9],axis=1), 'total_val_loss')
+
 
                         break
            
