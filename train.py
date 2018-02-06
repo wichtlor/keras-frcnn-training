@@ -101,6 +101,9 @@ elif options.network == 'resnet50':
 elif options.network == 'mynet':
 	from netze import mynet as nn
 	C.network = 'mynet'
+elif options.network == 'mynet_small':
+	from netze import mynet_small as nn
+	C.network = 'mynet_small'
 else:
 	print('Not a valid model')
 	raise ValueError
