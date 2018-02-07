@@ -173,14 +173,15 @@ start_time = time.time()
 
 
 
-
-model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=30, epochs=5, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5, workers=2, use_multiprocessing=True)
-
+print('1')
+model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5, workers=2, use_multiprocessing=True)
+print('2')
 data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+print('3')
 data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-
-model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=30, epochs=5, verbose=1, validation_data=data_gen_cls_val, validation_steps=5, workers=2, use_multiprocessing=True)
-
+print('4')
+model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_cls_val, validation_steps=5, workers=2, use_multiprocessing=True)
+print('5')
 
 #==============================================================================
 # 
