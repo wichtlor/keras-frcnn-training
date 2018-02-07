@@ -54,7 +54,7 @@ def rpn(base_layers, num_anchors, trainable=False):
     x_class = Conv2D(num_anchors, (1, 1), activation='sigmoid', kernel_initializer='uniform', name='rpn_out_class')(x)
     x_regr = Conv2D(num_anchors * 4, (1, 1), activation='linear', kernel_initializer='zero', name='rpn_out_regress')(x)
 
-    return [x_class, x_regr]
+    return [x_class, x_regr, base_layers]
 
 
 def classifier(base_layers, input_rois, num_rois, nb_classes = 21, trainable=False):
