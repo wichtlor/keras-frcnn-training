@@ -385,7 +385,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
-def get_classifier_gt(all_img_data, graph, class_count, C, img_length_calc_function, backend, mode='train'):
+def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, backend, mode='train'):
 #==============================================================================
 #     img_input = Input(shape=(None, None, 3))
 #     shared_layers = nn.nn_base(img_input, trainable=True)
