@@ -138,13 +138,15 @@ model_all = Model([img_input, roi_input], rpn + classifier)
 
 
 
-try:
-	print('loading weights from {}'.format(C.base_net_weights))
-	model_rpn.load_weights(C.base_net_weights, by_name=True)
-#	model_classifier.load_weights(C.base_net_weights, by_name=True)
-except:
-	print('Could not load pretrained model weights. Weights can be found in the keras application folder \
-		https://github.com/fchollet/keras/tree/master/keras/applications')
+#==============================================================================
+# try:
+# 	print('loading weights from {}'.format(C.base_net_weights))
+# 	model_rpn.load_weights(C.base_net_weights, by_name=True)
+# #	model_classifier.load_weights(C.base_net_weights, by_name=True)
+# except:
+# 	print('Could not load pretrained model weights. Weights can be found in the keras application folder \
+# 		https://github.com/fchollet/keras/tree/master/keras/applications')
+#==============================================================================
 
 
 
@@ -171,11 +173,11 @@ start_time = time.time()
 
 print('1')
 model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5)
-model_all.save_weights(C.model_path + model_name)
+#model_all.save_weights(C.model_path + model_name)
 print('2')
-data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 print('3')
-data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 print('4')
 model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_cls_val, validation_steps=5)
 print('5')
