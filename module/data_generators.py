@@ -13,7 +13,7 @@ from keras import backend as K
 from keras_frcnn import roi_helpers as roi_helpers
 from keras_frcnn import data_augment
 from netze import mynet_small as nn
-
+import tensorflow as tf
 def union(au, bu, area_intersection):
     area_a = (au[2] - au[0]) * (au[3] - au[1])
     area_b = (bu[2] - bu[0]) * (bu[3] - bu[1])
@@ -391,6 +391,7 @@ def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, ba
     model_rpn = Model(img_input, rpn[:2])
     model_rpn.load_weights(C.model_path + 'model_frcnn.hdf5', by_name=True)
     model_rpn.compile(optimizer='sgd', loss='mse')
+    graph = tf.get_default_graph()
     
     sample_selector = SampleSelector(class_count)
     print('a')
@@ -446,7 +447,8 @@ def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, ba
                 print('h')
                 #rpn predictions
                 print('i')
-                P_rpn = model_rpn.predict(x_img)
+                with graph.as_default():
+                    P_rpn = model_rpn.predict(x_img)
                 print('j')
                 #rpn predictions umformen zu RoI
                 R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
