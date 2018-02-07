@@ -381,7 +381,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
-def get_classifier_gt(all_img_data, rpn_model, class_count, C, img_length_calc_function, backend, mode='train'):
+def get_classifier_gt(all_img_data, model_rpn, class_count, C, img_length_calc_function, backend, mode='train'):
     
     sample_selector = SampleSelector(class_count)
     print('a')
@@ -433,10 +433,12 @@ def get_classifier_gt(all_img_data, rpn_model, class_count, C, img_length_calc_f
                 if backend == 'tf':
                     x_img = np.transpose(x_img, (0, 2, 3, 1))
                 
-                X = np.copy(x_img)
-                print('i')
+                
+                print('h')
                 #rpn predictions
-                P_rpn = rpn_model.predict_on_batch(X)
+                model_rpn._make_predict_function()
+                print('i')
+                P_rpn = model_rpn.predict_on_batch(x_img)
                 print('j')
                 #rpn predictions umformen zu RoI
                 R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
@@ -456,7 +458,7 @@ def get_classifier_gt(all_img_data, rpn_model, class_count, C, img_length_calc_f
                 
                 selected_rois_train = select_rois_for_detection(Y1, C)
                 print('m')
-                yield [X, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]]
+                yield [x_img, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]]
                 
             except Exception as e:
                 print(e)
