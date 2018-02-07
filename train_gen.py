@@ -173,7 +173,7 @@ start_time = time.time()
 
 print('1')
 model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5)
-model_rpn.save_weights(C.model_path + 'rpn.hdf5')
+model_all.save_weights(C.model_path + 'rpn.hdf5')
 print('2')
 data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, img_input, rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 print('3')
