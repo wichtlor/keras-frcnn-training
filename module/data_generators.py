@@ -438,7 +438,7 @@ def get_classifier_gt(all_img_data, model_rpn, class_count, C, img_length_calc_f
                 #rpn predictions
                 print(model_rpn)
                 print('i')
-                P_rpn = model_rpn.predict_on_batch(x_img)
+                P_rpn = model_rpn.predict(x_img)
                 print('j')
                 #rpn predictions umformen zu RoI
                 R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
