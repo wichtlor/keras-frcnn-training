@@ -3,12 +3,13 @@ import numpy as np
 import cv2
 import random
 import copy
-from . import data_augment
+
 import threading
 import itertools
 
 from keras import backend as K
 from keras_frcnn import roi_helpers as roi_helpers
+from keras_frcnn import data_augment
 
 def union(au, bu, area_intersection):
     area_a = (au[2] - au[0]) * (au[3] - au[1])
