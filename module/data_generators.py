@@ -6,7 +6,7 @@ import copy
 
 import threading
 import itertools
-
+from keras.models import load_model
 from keras.layers import Input
 from keras.models import Model
 from keras import backend as K
@@ -387,13 +387,14 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
 
 def get_classifier_gt(all_img_data, graph, class_count, C, img_length_calc_function, backend, mode='train'):
 #==============================================================================
-    img_input = Input(shape=(None, None, 3))
-    shared_layers = nn.nn_base(img_input, trainable=True)
-    rpn = nn.rpn(shared_layers, 9, trainable=True)
-    model_rpn = Model(img_input, rpn[:2])
-    model_rpn.load_weights(C.model_path + 'model_frcnn.hdf5', by_name=True)
+#     img_input = Input(shape=(None, None, 3))
+#     shared_layers = nn.nn_base(img_input, trainable=True)
+#     rpn = nn.rpn(shared_layers, 9, trainable=True)
+#     model_rpn = Model(img_input, rpn[:2])
+#     model_rpn.load_weights(C.model_path + 'model_frcnn.hdf5', by_name=True)
 #     model_rpn.compile(optimizer='sgd', loss='mse')
 #==============================================================================
+    model_rpn = load_model(C.model_path + 'model_frcnn.hdf5')
     model_rpn._make_predict_function()
 
     
@@ -451,8 +452,7 @@ def get_classifier_gt(all_img_data, graph, class_count, C, img_length_calc_funct
                 print('h')
                 #rpn predictions
                 print('i')
-                with graph.as_default():
-                    P_rpn = model_rpn.predict(x_img)
+                P_rpn = model_rpn.predict(x_img)
                 print('j')
                 #rpn predictions umformen zu RoI
                 R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
