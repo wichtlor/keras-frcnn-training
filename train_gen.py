@@ -11,50 +11,15 @@ from keras.layers import Input
 from keras.optimizers import SGD, Adam
 from keras.utils import generic_utils
 
-from keras_frcnn import config, data_generators
+from keras_frcnn import config
 from keras_frcnn.pascal_voc_parser import get_data
 from keras_frcnn import losses as losses
 from keras_frcnn import roi_helpers as roi_helpers
 
 from visualization.plots import save_plots
+from module import data_generators
 
-def select_rois_for_detection(Y1):
-    #Background oder Objekt
-    neg_samples = np.where(Y1[0, :, -1] == 1)
-    pos_samples = np.where(Y1[0, :, -1] == 0)
-    if len(neg_samples) > 0:
-        neg_samples = neg_samples[0]
-    else:
-        neg_samples = []
-    if len(pos_samples) > 0:
-        pos_samples = pos_samples[0]
-    else:
-        pos_samples = []
-    
-    rpn_accuracy_rpn_monitor_train.append(len(pos_samples))
-    rpn_accuracy_for_epoch_train.append((len(pos_samples)))
-    
-    #Background und Objekt RoIs werden ausgewaehlt und ergeben die Batch fuer den Klassifikator
-    if C.num_rois > 1:
-        if len(pos_samples) < C.num_rois//2:
-            selected_pos_samples = pos_samples.tolist()
-        else:
-            selected_pos_samples = np.random.choice(pos_samples, C.num_rois//2, replace=False).tolist()
-        try:
-            selected_neg_samples = np.random.choice(neg_samples, C.num_rois - len(selected_pos_samples), replace=False).tolist()
-        except:
-            selected_neg_samples = np.random.choice(neg_samples, C.num_rois - len(selected_pos_samples), replace=True).tolist()
-    
-        sel_samples = selected_pos_samples + selected_neg_samples
-    else:
-        # in the extreme case where num_rois = 1, we pick a random pos or neg sample
-        selected_pos_samples = pos_samples.tolist()
-        selected_neg_samples = neg_samples.tolist()
-        if np.random.randint(0, 2): 
-            sel_samples = random.choice(neg_samples)
-        else:
-            sel_samples = random.choice(pos_samples) 
-    return sel_samples
+
 
 parser = OptionParser()
 
@@ -137,7 +102,7 @@ with open(config_output_filename, 'wb') as config_f:
 	pickle.dump(C,config_f)
 	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
  
-random.shuffle(all_imgs)#bilder werden auch noch im data generator geshuffled...???
+#random.shuffle(all_imgs)#bilder werden auch noch im data generator geshuffled...???
 
 #teile all_imgs in Trainings- und Validationdatensatz
 train_imgs = [s for s in all_imgs if s['imageset'] == 'trainval']
@@ -146,8 +111,8 @@ print('Num train samples {}'.format(len(train_imgs)))
 print('Num val samples {}'.format(len(val_imgs)))
 
 #
-data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-data_gen_val = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
+data_gen_train_rpn = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_val_rpn = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
 
 #Netz-Eingabetensor
 input_shape_img = (None, None, 3) #width*height*colorchannel
@@ -193,6 +158,7 @@ model_all.compile(optimizer='sgd', loss='mae')
 model_all.summary()
 
 epoch_length = 1000
+validation_length = 200
 num_epochs = int(options.num_epochs)
 iter_num = 0
 
@@ -208,20 +174,12 @@ start_time = time.time()
 
 
 
-model_rpn.fit_generator(data_gen_train, epoch_length, num_epochs, verbose=1, validation_data=data_gen_val, validation_steps=200, workers=4, use_multiprocessing=True)
+model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=30, epochs=5, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5, workers=4, use_multiprocessing=True)
 
+data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train', model_rpn)
+data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train', model_rpn)
 
-
-
-
-
-
-
-
-
-
-
-
+model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=30, epochs=5, verbose=1, validation_data=data_gen_cls_val, validation_steps=5, workers=4, use_multiprocessing=True)
 
 
 #==============================================================================
