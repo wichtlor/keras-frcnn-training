@@ -7,6 +7,7 @@ import copy
 import threading
 import itertools
 
+from keras.models import Model
 from keras import backend as K
 from keras_frcnn import roi_helpers as roi_helpers
 from keras_frcnn import data_augment
@@ -381,7 +382,10 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
-def get_classifier_gt(all_img_data, model_rpn, class_count, C, img_length_calc_function, backend, mode='train'):
+def get_classifier_gt(all_img_data, img_input, rpn, class_count, C, img_length_calc_function, backend, mode='train'):
+    model_rpn = Model(img_input, rpn)
+    model_rpn.load_weights(C.model_path + 'rpn.hdf5')
+    model_rpn.compile(optimizer='sgd', loss='mse')
     
     sample_selector = SampleSelector(class_count)
     print('a')
@@ -436,7 +440,6 @@ def get_classifier_gt(all_img_data, model_rpn, class_count, C, img_length_calc_f
                 
                 print('h')
                 #rpn predictions
-                print(model_rpn)
                 print('i')
                 P_rpn = model_rpn.predict(x_img)
                 print('j')
