@@ -7,6 +7,7 @@ from . import data_augment
 import threading
 import itertools
 
+from keras import backend as K
 from keras_frcnn import roi_helpers as roi_helpers
 
 def union(au, bu, area_intersection):
@@ -271,7 +272,7 @@ def threadsafe_generator(f):
         return threadsafe_iter(f(*a, **kw))
     return g
 
-def select_rois_for_detection(Y1):
+def select_rois_for_detection(Y1, C):
     #Background oder Objekt
     neg_samples = np.where(Y1[0, :, -1] == 1)
     pos_samples = np.where(Y1[0, :, -1] == 0)
@@ -283,9 +284,7 @@ def select_rois_for_detection(Y1):
         pos_samples = pos_samples[0]
     else:
         pos_samples = []
-    
-    rpn_accuracy_rpn_monitor_train.append(len(pos_samples))
-    rpn_accuracy_for_epoch_train.append((len(pos_samples)))
+
     
     #Background und Objekt RoIs werden ausgewaehlt und ergeben die Batch fuer den Klassifikator
     if C.num_rois > 1:
@@ -443,14 +442,14 @@ def get_classifier_gt(all_img_data, rpn_model, class_count, C, img_length_calc_f
                 #    y_class_regr_label und y_class_regr_coords in einem Array mit .shape = (1, num_rois, (4*num_classes-1)+(4*num_classes-1))
                 #IouS: for debugging only
                 # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
-                X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data_aug, C, class_mapping)
+                X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data_aug, C, C.class_mapping)
                 
                 
                 #wenn keine RoI gefunden wurde
                 if X2 is None:
                     print('X2 is none!!!!11')
                 
-                selected_rois_train = select_rois_for_detection(Y1)
+                selected_rois_train = select_rois_for_detection(Y1, C)
                 
                 yield [X, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]]
                 
