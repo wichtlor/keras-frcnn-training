@@ -381,7 +381,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
-def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, backend, mode='train', rpn_model):
+def get_classifier_gt(all_img_data, rpn_model, class_count, C, img_length_calc_function, backend, mode='train'):
     
     sample_selector = SampleSelector(class_count)
     
