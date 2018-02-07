@@ -429,7 +429,7 @@ def get_classifier_gt(all_img_data, model_rpn, class_count, C, img_length_calc_f
 
                 x_img = np.transpose(x_img, (2, 0, 1))
                 x_img = np.expand_dims(x_img, axis=0)
-                print('h')
+                
                 if backend == 'tf':
                     x_img = np.transpose(x_img, (0, 2, 3, 1))
                 

@@ -171,18 +171,23 @@ rpn_accuracy_for_epoch_train = []
 start_time = time.time()
 
 
-
+data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+X, Y, img_data = next(data_gen_train)
 
 print('1')
 model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5)
-print(model_rpn)
 print('2')
-data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-print('3')
-data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-print('4')
-model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_cls_val, validation_steps=5)
-print('5')
+model_rpn.predict_on_batch(X)
+print('done')
+#==============================================================================
+# print('2')
+# data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+# print('3')
+# data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+# print('4')
+# model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_cls_val, validation_steps=5)
+# print('5')
+#==============================================================================
 
 #==============================================================================
 # 
