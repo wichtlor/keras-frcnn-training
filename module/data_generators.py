@@ -436,7 +436,7 @@ def get_classifier_gt(all_img_data, model_rpn, class_count, C, img_length_calc_f
                 
                 print('h')
                 #rpn predictions
-                model_rpn._make_predict_function()
+                print(model_rpn)
                 print('i')
                 P_rpn = model_rpn.predict_on_batch(x_img)
                 print('j')
