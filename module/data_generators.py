@@ -385,7 +385,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
-def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, backend, mode='train'):
+def get_classifier_gt(all_img_data, graph, class_count, C, img_length_calc_function, backend, mode='train'):
 #==============================================================================
 #     img_input = Input(shape=(None, None, 3))
 #     shared_layers = nn.nn_base(img_input, trainable=True)
@@ -452,7 +452,8 @@ def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, ba
                 print('h')
                 #rpn predictions
                 print('i')
-                P_rpn = model_rpn.predict(x_img)
+                with graph.as_default():
+                    P_rpn = model_rpn.predict(x_img)
                 print('j')
                 #rpn predictions umformen zu RoI
                 R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
