@@ -384,7 +384,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
 
 def get_classifier_gt(all_img_data, img_input, rpn, class_count, C, img_length_calc_function, backend, mode='train'):
     model_rpn = Model(img_input, rpn)
-    model_rpn.load_weights(C.model_path + 'rpn.hdf5')
+    model_rpn.load_weights(C.model_path + 'rpn.hdf5', by_name=True)
     model_rpn.compile(optimizer='sgd', loss='mse')
     
     sample_selector = SampleSelector(class_count)
