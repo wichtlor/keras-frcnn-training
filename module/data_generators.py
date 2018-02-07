@@ -7,10 +7,12 @@ import copy
 import threading
 import itertools
 
+from keras.layers import Input
 from keras.models import Model
 from keras import backend as K
 from keras_frcnn import roi_helpers as roi_helpers
 from keras_frcnn import data_augment
+from netze import mynet_small as nn
 
 def union(au, bu, area_intersection):
     area_a = (au[2] - au[0]) * (au[3] - au[1])
@@ -382,9 +384,12 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
-def get_classifier_gt(all_img_data, img_input, rpn, class_count, C, img_length_calc_function, backend, mode='train'):
-    model_rpn = Model(img_input, rpn)
-    model_rpn.load_weights(C.model_path + 'rpn.hdf5', by_name=True)
+def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, backend, mode='train'):
+    img_input = Input(shape=(None, None, 3))
+    shared_layers = nn.nn_base(img_input, trainable=True)
+    rpn = nn.rpn(shared_layers, 9, trainable=True)
+    model_rpn = Model(img_input, rpn[:2])
+    model_rpn.load_weights(C.model_path + 'model_frcnn.hdf5', by_name=True)
     model_rpn.compile(optimizer='sgd', loss='mse')
     
     sample_selector = SampleSelector(class_count)
