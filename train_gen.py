@@ -170,7 +170,8 @@ rpn_accuracy_rpn_monitor_train = []
 rpn_accuracy_for_epoch_train = []
 start_time = time.time()
 graph = tf.get_default_graph()
-
+import threading
+threading.current_thread()
 print('1')
 model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5)
 model_rpn.save(C.model_path + model_name)
