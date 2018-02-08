@@ -391,10 +391,11 @@ def get_classifier_gt(all_img_data, graph, class_count, C, img_length_calc_funct
 #     model_rpn.load_weights(C.model_path + 'model_frcnn.hdf5', by_name=True)
 #     model_rpn.compile(optimizer='sgd', loss='mse')
 #==============================================================================
+    import threading
+    print(threading.current_thread())
     model_rpn = load_model(C.model_path + 'model_frcnn.hdf5')
     model_rpn._make_predict_function()
-    import threading
-    threading.current_thread()
+
     
     
     sample_selector = SampleSelector(class_count)
