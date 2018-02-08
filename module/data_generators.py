@@ -289,8 +289,6 @@ def select_rois_for_detection(Y1, C):
         pos_samples = pos_samples[0]
     else:
         pos_samples = []
-
-    
     #Background und Objekt RoIs werden ausgewaehlt und ergeben die Batch fuer den Klassifikator
     if C.num_rois > 1:
         if len(pos_samples) < C.num_rois//2:
@@ -301,7 +299,6 @@ def select_rois_for_detection(Y1, C):
             selected_neg_samples = np.random.choice(neg_samples, C.num_rois - len(selected_pos_samples), replace=False).tolist()
         except:
             selected_neg_samples = np.random.choice(neg_samples, C.num_rois - len(selected_pos_samples), replace=True).tolist()
-    
         sel_samples = selected_pos_samples + selected_neg_samples
     else:
         # in the extreme case where num_rois = 1, we pick a random pos or neg sample
