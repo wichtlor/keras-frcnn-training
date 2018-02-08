@@ -178,7 +178,7 @@ graph = K.get_session().graph
 print('2')
 data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 print('3')
-data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 print('4')
 model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=5, epochs=2, verbose=1, validation_data=data_gen_cls_val, validation_steps=5)
 print('5')
