@@ -396,6 +396,7 @@ def get_classifier_gt(all_img_data, graph, class_count, C, img_length_calc_funct
     import threading
     threading.current_thread()
     
+    
     sample_selector = SampleSelector(class_count)
     print('a')
     while True:
