@@ -15,7 +15,6 @@ from keras_frcnn import data_augment
 from netze import mynet_small as nn
 import tensorflow as tf
 
-global graph
 
 def union(au, bu, area_intersection):
     area_a = (au[2] - au[0]) * (au[3] - au[1])
@@ -384,7 +383,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
-def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, backend, mode='train'):
+def get_classifier_gt(all_img_data, graph, path,class_count, C, img_length_calc_function, backend, mode='train'):
 #==============================================================================
 #     img_input = Input(shape=(None, None, 3))
 #     shared_layers = nn.nn_base(img_input, trainable=True)
@@ -393,10 +392,9 @@ def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, ba
 #     model_rpn.load_weights(C.model_path + 'model_frcnn.hdf5', by_name=True)
 #     model_rpn.compile(optimizer='sgd', loss='mse')
 #==============================================================================
-    import threading
-    print(threading.current_thread())
-    model_rpn = load_model(C.model_path + 'model_frcnn.hdf5')
-    model_rpn._make_predict_function()
+    with graph.as_default():
+        model_rpn = load_model(C.model_path + 'model_frcnn.hdf5')
+        model_rpn._make_predict_function()
 
     
     
