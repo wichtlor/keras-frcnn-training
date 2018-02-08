@@ -125,23 +125,18 @@ shared_layers = nn.nn_base(img_input, trainable=True)
 # define the RPN, built on the base layers
 num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
 rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
-model_rpn = Model(img_input, rpn[:2])
-graph = tf.get_default_graph()
+
+
 #RoI Klassifikator 
 classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
 
 #Instantiierung der Modelle
 model_classifier = Model([img_input, roi_input], classifier)
-graph2 = tf.get_default_graph()
-assert(graph == graph2)
+model_rpn = Model(img_input, rpn[:2])
 # this is a model that holds both the RPN and the classifier, used to load/save weights for the models
 model_all = Model([img_input, roi_input], rpn + classifier)
 
-graph3 = tf.get_default_graph()
 
-assert(graph == graph2)
-assert(graph2 == graph3)
-assert(graph == graph3)
 
 #==============================================================================
 # try:
@@ -161,8 +156,6 @@ model_rpn.compile(optimizer=Adam(lr=0.0005), loss=[losses.rpn_loss_cls(num_ancho
 model_classifier.compile(optimizer=Adam(lr=0.0005), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
 model_all.compile(optimizer='sgd', loss='mae')
 model_all.summary()
-graph4 = tf.get_default_graph()
-assert(graph == graph4)
 
 
 epoch_length = 1000
@@ -181,8 +174,9 @@ start_time = time.time()
 print('1')
 model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=3, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5)
 model_rpn.save(C.model_path + model_name)
+graph = K.get_session().graph
 print('2')
-data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 print('3')
 data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 print('4')

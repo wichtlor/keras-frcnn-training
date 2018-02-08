@@ -15,6 +15,8 @@ from keras_frcnn import data_augment
 from netze import mynet_small as nn
 import tensorflow as tf
 
+global graph
+
 def union(au, bu, area_intersection):
     area_a = (au[2] - au[0]) * (au[3] - au[1])
     area_b = (bu[2] - bu[0]) * (bu[3] - bu[1])
@@ -382,7 +384,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
-def get_classifier_gt(all_img_data, graph, class_count, C, img_length_calc_function, backend, mode='train'):
+def get_classifier_gt(all_img_data, class_count, C, img_length_calc_function, backend, mode='train'):
 #==============================================================================
 #     img_input = Input(shape=(None, None, 3))
 #     shared_layers = nn.nn_base(img_input, trainable=True)
