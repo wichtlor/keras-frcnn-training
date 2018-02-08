@@ -362,7 +362,7 @@ for epoch_num in range(num_epochs):
                             best_loss = curr_val_loss
                             model_all.save_weights(C.model_path + model_name)
                         start_time = time.time()
-                        #save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
+                        save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
                         print('Saving plots took: {}'.format(time.time() - start_time))
                         start_time = time.time()
                         iter_num = 0
