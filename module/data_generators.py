@@ -399,20 +399,19 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
     
     
     sample_selector = SampleSelector(class_count)
-    print('a')
+
     while True:
-        print('b')
+
         if mode == 'train':
             np.random.shuffle(all_img_data)
-            print('c')
             
         for img_data in all_img_data:
-            print('d')
+
             try:
                 
                 if C.balanced_classes and sample_selector.skip_sample_for_balanced_class(img_data):
                     continue
-                print('e')
+
                 
                 # read in image, and optionally add augmentation
                 if mode == 'train':
@@ -422,8 +421,7 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
 
                 (width, height) = (img_data_aug['width'], img_data_aug['height'])
                 (rows, cols, _) = x_img.shape
-                
-                print('f')
+
                 
                 assert cols == width
                 assert rows == height
@@ -432,7 +430,7 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
                 (resized_width, resized_height) = get_new_img_size(width, height, C.im_size)
                 # resize the image so that smalles side is length = 600px
                 x_img = cv2.resize(x_img, (resized_width, resized_height), interpolation=cv2.INTER_CUBIC)
-                print('g')
+
                 # Zero-center by mean pixel, and preprocess image
 
                 x_img = x_img[:,:, (2, 1, 0)]  # BGR -> RGB
@@ -448,16 +446,15 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
                 if backend == 'tf':
                     x_img = np.transpose(x_img, (0, 2, 3, 1))
                 
-                
-                print('h')
+
                 #rpn predictions
-                print('i')
+
                 with graph.as_default():
                     P_rpn = model_rpn.predict(x_img)
-                print('j')
+
                 #rpn predictions umformen zu RoI
                 R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
-                print('k')
+
                 #X2: RoIs mit Koordinaten (x1, y1, w, h)
                 #Y1: Ground truth Klassenlabel der RoIs [0,0,...,0,1,0,0]. Array mit .shape (1, num_rois, num_classes)
                 #Y2: Ground truth regression targets der RoIs ohne die Background Klasse:
@@ -465,14 +462,14 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
                 #IouS: for debugging only
                 # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
                 X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data_aug, C, C.class_mapping)
-                print('l')
+
                 
                 #wenn keine RoI gefunden wurde
                 if X2 is None:
                     print('X2 is none!!!!11')
                 
                 selected_rois_train = select_rois_for_detection(Y1, C)
-                print('m')
+
                 yield [x_img, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]]
                 
             except Exception as e:
