@@ -117,7 +117,6 @@ data_gen_val_rpn = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.
 #Netz-Eingabetensor
 input_shape_img = (None, None, 3) #width*height*colorchannel
 img_input = Input(shape=input_shape_img)
-
 roi_input = Input(shape=(None, 4)) #center_x,center_y,width,height
 
 # define the base network (resnet here, can be VGG, Inception, etc)
@@ -126,13 +125,15 @@ shared_layers = nn.nn_base(img_input, trainable=True)
 # define the RPN, built on the base layers
 num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
 rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
-
+model_rpn = Model(img_input, rpn[:2])
+graph = tf.get_default_graph()
 #RoI Klassifikator 
 classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
 
 #Instantiierung der Modelle
-model_rpn = Model(img_input, rpn[:2])
 model_classifier = Model([img_input, roi_input], classifier)
+graph2 = tf.get_default_graph()
+assert(graph == graph2)
 # this is a model that holds both the RPN and the classifier, used to load/save weights for the models
 model_all = Model([img_input, roi_input], rpn + classifier)
 
@@ -169,9 +170,7 @@ epoch_mean_losses = np.zeros((num_epochs, 10))
 rpn_accuracy_rpn_monitor_train = []
 rpn_accuracy_for_epoch_train = []
 start_time = time.time()
-graph = tf.get_default_graph()
-import threading
-print(threading.current_thread())
+
 print('1')
 model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=3, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5)
 model_rpn.save(C.model_path + model_name)
