@@ -158,7 +158,7 @@ model_all.summary()
 
 rpn_accuracy_rpn_monitor_train = []
 rpn_accuracy_for_epoch_train = []
-start_time = time.time()
+
 graph = K.get_session().graph
 
 #
@@ -179,20 +179,26 @@ epoch_mean_losses = np.zeros((num_epochs, 10))
 rpn_history = []
 classifier_history = []
 
+
+
 for epoch_num in range(num_epochs):
+    print('Epoche {}/{}'.format(epoch_num+1,num_epochs))
+    start_time = time.time()
     
-    hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length)
+    hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, workers=4)
     rpn_history.append(hist.history)
     
-    hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length)
+    hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, workers=4)
     classifier_history.append(hist.history)
     
-    curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path)
+    curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path, len(classes_count))
     
     if curr_val_loss < best_loss:
         print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
         best_loss = curr_val_loss
         model_all.save_weights(C.model_path + model_name)
+        
+    print('Epoch took: {}'.format(time.time() - start_time))
 #==============================================================================
 # 
 # print('Starting training')

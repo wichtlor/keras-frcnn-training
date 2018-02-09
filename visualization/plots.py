@@ -22,7 +22,7 @@ def save_plots(losses, epoch_num, path):
     plot_loss(losses[:epoch_num, 4], losses[:epoch_num, 9], 'class_acc', path)
     plot_loss(np.sum(losses[:epoch_num,:4],axis=1), np.sum(losses[:epoch_num,5:9],axis=1), 'total_loss', path)
     
-def save_plots_from_history(rpn_hist, cls_hist, path):
+def save_plots_from_history(rpn_hist, cls_hist, path, num_classes):
     losses = np.zeros((len(rpn_hist), 14))
     epoch = len(rpn_hist)
     
@@ -36,12 +36,12 @@ def save_plots_from_history(rpn_hist, cls_hist, path):
         losses[epoch_num, 11] = rpn_hist[epoch_num]['val_loss'][0]
         
     for epoch_num in range(len(cls_hist)):
-        losses[epoch_num, 2] = cls_hist[epoch_num]['dense_class_21_loss'][0]
-        losses[epoch_num, 3] = cls_hist[epoch_num]['dense_regress_21_loss'][0]
-        losses[epoch_num, 4] = cls_hist[epoch_num]['dense_class_21_acc'][0]
-        losses[epoch_num, 7] = cls_hist[epoch_num]['val_dense_class_21_loss'][0]
-        losses[epoch_num, 8] = cls_hist[epoch_num]['val_dense_regress_21_loss'][0]
-        losses[epoch_num, 9] = cls_hist[epoch_num]['val_dense_class_21_acc'][0]
+        losses[epoch_num, 2] = cls_hist[epoch_num]['dense_class_'+str(num_classes)+'_loss'][0]
+        losses[epoch_num, 3] = cls_hist[epoch_num]['dense_regress_'+str(num_classes)+'_loss'][0]
+        losses[epoch_num, 4] = cls_hist[epoch_num]['dense_class_'+str(num_classes)+'_acc'][0]
+        losses[epoch_num, 7] = cls_hist[epoch_num]['val_dense_class_'+str(num_classes)+'_loss'][0]
+        losses[epoch_num, 8] = cls_hist[epoch_num]['val_dense_regress_'+str(num_classes)+'_loss'][0]
+        losses[epoch_num, 9] = cls_hist[epoch_num]['val_dense_class_'+str(num_classes)+'_acc'][0]
         losses[epoch_num, 12] = cls_hist[epoch_num]['loss'][0]
         losses[epoch_num, 13] = cls_hist[epoch_num]['val_loss'][0]
         
