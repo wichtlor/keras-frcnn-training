@@ -28,22 +28,22 @@ def save_plots_from_history(rpn_hist, cls_hist, path):
     
             
     for epoch_num in range(len(rpn_hist)):
-        losses[epoch_num, 0] = rpn_hist[epoch_num]['rpn_out_class_loss']
-        losses[epoch_num, 1] = rpn_hist[epoch_num]['rpn_out_regress_loss']
-        losses[epoch_num, 5] = rpn_hist[epoch_num]['val_rpn_out_class_loss']
-        losses[epoch_num, 6] = rpn_hist[epoch_num]['val_rpn_out_regress_loss']
-        losses[epoch_num, 10] = rpn_hist[epoch_num]['loss']
-        losses[epoch_num, 11] = rpn_hist[epoch_num]['val_loss']
+        losses[epoch_num, 0] = rpn_hist[epoch_num]['rpn_out_class_loss'][0]
+        losses[epoch_num, 1] = rpn_hist[epoch_num]['rpn_out_regress_loss'][0]
+        losses[epoch_num, 5] = rpn_hist[epoch_num]['val_rpn_out_class_loss'][0]
+        losses[epoch_num, 6] = rpn_hist[epoch_num]['val_rpn_out_regress_loss'][0]
+        losses[epoch_num, 10] = rpn_hist[epoch_num]['loss'][0]
+        losses[epoch_num, 11] = rpn_hist[epoch_num]['val_loss'][0]
         
     for epoch_num in range(len(cls_hist)):
-        losses[epoch_num, 2] = cls_hist[epoch_num]['dense_class_21_loss']
-        losses[epoch_num, 3] = cls_hist[epoch_num]['dense_regress_21_loss']
-        losses[epoch_num, 4] = cls_hist[epoch_num]['dense_class_21_acc']
-        losses[epoch_num, 7] = cls_hist[epoch_num]['val_dense_class_21_loss']
-        losses[epoch_num, 8] = cls_hist[epoch_num]['val_dense_regress_21_loss']
-        losses[epoch_num, 9] = cls_hist[epoch_num]['val_dense_class_21_acc']
-        losses[epoch_num, 12] = cls_hist[epoch_num]['loss']
-        losses[epoch_num, 13] = cls_hist[epoch_num]['val_loss']
+        losses[epoch_num, 2] = cls_hist[epoch_num]['dense_class_21_loss'][0]
+        losses[epoch_num, 3] = cls_hist[epoch_num]['dense_regress_21_loss'][0]
+        losses[epoch_num, 4] = cls_hist[epoch_num]['dense_class_21_acc'][0]
+        losses[epoch_num, 7] = cls_hist[epoch_num]['val_dense_class_21_loss'][0]
+        losses[epoch_num, 8] = cls_hist[epoch_num]['val_dense_regress_21_loss'][0]
+        losses[epoch_num, 9] = cls_hist[epoch_num]['val_dense_class_21_acc'][0]
+        losses[epoch_num, 12] = cls_hist[epoch_num]['loss'][0]
+        losses[epoch_num, 13] = cls_hist[epoch_num]['val_loss'][0]
         
         
     plot_loss(losses[:epoch_num, 0], losses[:epoch_num, 5], 'loss_rpn_cls', path)
