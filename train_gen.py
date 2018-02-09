@@ -152,8 +152,8 @@ model_all = Model([img_input, roi_input], rpn + classifier)
 
 
 #Modelle kompilieren
-model_rpn.compile(optimizer=Adam(lr=0.0005), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
-model_classifier.compile(optimizer=Adam(lr=0.0005), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
+model_rpn.compile(optimizer=Adam(lr=0.00003), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
+model_classifier.compile(optimizer=Adam(lr=0.00003), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
 model_all.compile(optimizer='sgd', loss='mae')
 model_all.summary()
 
@@ -170,15 +170,15 @@ epoch_mean_losses = np.zeros((num_epochs, 10))
 rpn_accuracy_rpn_monitor_train = []
 rpn_accuracy_for_epoch_train = []
 start_time = time.time()
-
+graph = K.get_session().graph
+data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 for iteration in range(40):
-    model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=1000, epochs=5, verbose=1, validation_data=data_gen_val_rpn, validation_steps=200)
+    model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=5, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=200)
     #model_rpn.save(C.model_path + model_name)
     #model_all.save_weights(C.model_path + model_name)
-    graph = K.get_session().graph
-    data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-    data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-    model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=1000, epochs=5, verbose=1, validation_data=data_gen_cls_val, validation_steps=200)
+
+    model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=5, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=200)
 
 
 #==============================================================================
