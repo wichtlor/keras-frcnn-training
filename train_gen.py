@@ -110,9 +110,7 @@ val_imgs = [s for s in all_imgs if s['imageset'] == 'test']
 print('Num train samples {}'.format(len(train_imgs)))
 print('Num val samples {}'.format(len(val_imgs)))
 
-#
-data_gen_train_rpn = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-data_gen_val_rpn = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
+
 
 #Netz-Eingabetensor
 input_shape_img = (None, None, 3) #width*height*colorchannel
@@ -158,34 +156,43 @@ model_all.compile(optimizer='sgd', loss='mae')
 model_all.summary()
 
 
+rpn_accuracy_rpn_monitor_train = []
+rpn_accuracy_for_epoch_train = []
+start_time = time.time()
+graph = K.get_session().graph
+
+#
+data_gen_train_rpn = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_val_rpn = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
+data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+
+
 epoch_length = 1000
-validation_length = 200
+validation_length = 300
 num_epochs = int(options.num_epochs)
-iter_num = 0
 
 best_loss = np.Inf
 train_losses = np.zeros((epoch_length, 5))
 epoch_mean_losses = np.zeros((num_epochs, 10))
 
-rpn_accuracy_rpn_monitor_train = []
-rpn_accuracy_for_epoch_train = []
-start_time = time.time()
-graph = K.get_session().graph
-data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 rpn_history = []
 classifier_history = []
 
 for epoch_num in range(num_epochs):
     
-    hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=2, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=1)
+    hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length)
     rpn_history.append(hist.history)
     
-    hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=2, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=1)
+    hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length)
     classifier_history.append(hist.history)
     
-    save_plots_from_history(rpn_history, classifier_history, C.model_path)
-
+    curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path)
+    
+    if curr_val_loss < best_loss:
+        print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
+        best_loss = curr_val_loss
+        model_all.save_weights(C.model_path + model_name)
 #==============================================================================
 # 
 # print('Starting training')

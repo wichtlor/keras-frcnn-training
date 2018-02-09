@@ -24,7 +24,7 @@ def save_plots(losses, epoch_num, path):
     
 def save_plots_from_history(rpn_hist, cls_hist, path):
     losses = np.zeros((len(rpn_hist), 14))
-    epoch_num = len(rpn_hist)
+    epoch = len(rpn_hist)
     
             
     for epoch_num in range(len(rpn_hist)):
@@ -46,11 +46,13 @@ def save_plots_from_history(rpn_hist, cls_hist, path):
         losses[epoch_num, 13] = cls_hist[epoch_num]['val_loss'][0]
         
         
-    plot_loss(losses[:epoch_num, 0], losses[:epoch_num, 5], 'loss_rpn_cls', path)
-    plot_loss(losses[:epoch_num, 1], losses[:epoch_num, 6], 'loss_rpn_regr', path)
-    plot_loss(losses[:epoch_num, 2], losses[:epoch_num, 7], 'loss_class_cls', path)
-    plot_loss(losses[:epoch_num, 3], losses[:epoch_num, 8], 'loss_class_regr', path)
-    plot_loss(losses[:epoch_num, 4], losses[:epoch_num, 9], 'class_acc', path)
-    plot_loss(losses[:epoch_num, 10], losses[:epoch_num, 11], 'rpn_loss', path)
-    plot_loss(losses[:epoch_num, 12], losses[:epoch_num, 13], 'detektor_loss', path)
-    plot_loss(losses[:epoch_num, 10]+losses[:epoch_num, 12], losses[:epoch_num, 11]+losses[:epoch_num, 13], 'total_loss', path)
+    plot_loss(losses[:epoch, 0], losses[:epoch, 5], 'loss_rpn_cls', path)
+    plot_loss(losses[:epoch, 1], losses[:epoch, 6], 'loss_rpn_regr', path)
+    plot_loss(losses[:epoch, 2], losses[:epoch, 7], 'loss_class_cls', path)
+    plot_loss(losses[:epoch, 3], losses[:epoch, 8], 'loss_class_regr', path)
+    plot_loss(losses[:epoch, 4], losses[:epoch, 9], 'class_acc', path)
+    plot_loss(losses[:epoch, 10], losses[:epoch, 11], 'rpn_loss', path)
+    plot_loss(losses[:epoch, 12], losses[:epoch, 13], 'detektor_loss', path)
+    plot_loss(losses[:epoch, 10]+losses[:epoch, 12], losses[:epoch, 11]+losses[:epoch, 13], 'total_loss', path)
+    curr_val_loss = losses[epoch, 11]+losses[epoch, 13]
+    return curr_val_loss
