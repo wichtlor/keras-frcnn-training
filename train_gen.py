@@ -181,10 +181,10 @@ classifier_history = []
 
 for epoch_num in range(num_epochs):
     
-    hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=5, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=5)
+    hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length)
     rpn_history.append(hist.history)
     
-    hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=5, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=5)
+    hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length)
     classifier_history.append(hist.history)
     
     curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path)
