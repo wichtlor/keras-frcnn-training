@@ -312,7 +312,7 @@ def select_rois_for_detection(Y1, C):
     return sel_samples
 
 
-
+@threadsafe_generator
 def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backend, mode='train'):
 
     # The following line is not useful with Python 3.5, it is kept for the legacy
@@ -383,6 +383,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
                 continue
 
 
+@threadsafe_generator
 def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length_calc_function, backend, mode='train'):
 #==============================================================================
 #     img_input = Input(shape=(None, None, 3))
