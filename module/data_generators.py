@@ -466,7 +466,7 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
                 
                 #wenn keine RoI gefunden wurde
                 if X2 is None:
-                    print('X2 is none!!!!11')
+                    continue
                 
                 selected_rois_train = select_rois_for_detection(Y1, C)
 
