@@ -134,7 +134,7 @@ try:
     # this is a model that holds both the RPN and the classifier, used to load/save weights for the models
     model_all = Model([img_input, roi_input], rpn + classifier)
     
-    
+    best_loss = np.Inf
     rpn_history = []
     classifier_history = []
     # check if weight path was passed via command line
@@ -151,6 +151,7 @@ try:
             with open(options.input_weight_path.rsplit(os.sep,1)[0] + os.sep + 'losses.pickle', 'rb') as read_loss:
                 rpn_history = pickle.load(read_loss)
                 classifier_history = pickle.load(read_loss)
+                best_loss = pickle.load(read_loss)
 
     #Modelle kompilieren
     model_rpn.compile(optimizer=Adam(lr=0.00001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
@@ -175,7 +176,7 @@ try:
     validation_length = 300
     num_epochs = int(options.num_epochs)
     
-    best_loss = np.Inf
+
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
@@ -195,8 +196,10 @@ try:
         
         #pickle losses um auch nach abgebrochenem und weitergefuehrtem Training vollstaendige Lossplots zu bekommen
         with open(options.input_weight_path.rsplit(os.sep,1)[0] + os.sep + 'losses.pickle','wb') as pickle_loss:
-            pickle.dump(rpn_history,pickle_loss)
-            pickle.dump(classifier_history,pickle_loss)
+            pickle.dump(rpn_history, pickle_loss)
+            pickle.dump(classifier_history, pickle_loss)
+            pickle.dump(best_loss, pickle_loss)
+            
         #speichere Plots aller Losses des Modells
         curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path, len(classes_count))
         
