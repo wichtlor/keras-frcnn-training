@@ -194,7 +194,7 @@ try:
         classifier_history.append(hist.history)
         
         #pickle losses um auch nach abgebrochenem und weitergefuehrtem Training vollstaendige Lossplots zu bekommen
-        with open('./losses.pickle','wb') as pickle_loss:
+        with open(options.input_weight_path.rsplit(os.sep,1)[0] + os.sep + 'losses.pickle','wb') as pickle_loss:
             pickle.dump(rpn_history,pickle_loss)
             pickle.dump(classifier_history,pickle_loss)
         #speichere Plots aller Losses des Modells
