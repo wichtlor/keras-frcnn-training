@@ -137,6 +137,7 @@ try:
     best_loss = np.Inf
     rpn_history = []
     classifier_history = []
+    
     # check if weight path was passed via command line
     if options.input_weight_path:
         C.base_net_weights = options.input_weight_path
@@ -148,7 +149,9 @@ try:
             print('Model weights konnten nicht geladen werden.')
 
         if 'losses.pickle' in os.listdir(options.input_weight_path.rsplit(os.sep,1)[0]):
-            with open(options.input_weight_path.rsplit(os.sep,1)[0] + os.sep + 'losses.pickle', 'rb') as read_loss:
+            print('Losses von vorangegangenem Training werden geladen.')
+            pickled_losses_path = options.input_weight_path.rsplit(os.sep,1)[0] + os.sep + 'losses.pickle'
+            with open(pickled_losses_path, 'rb') as read_loss:
                 rpn_history = pickle.load(read_loss)
                 classifier_history = pickle.load(read_loss)
                 best_loss = pickle.load(read_loss)
@@ -195,7 +198,7 @@ try:
         classifier_history.append(hist.history)
         
         #pickle losses um auch nach abgebrochenem und weitergefuehrtem Training vollstaendige Lossplots zu bekommen
-        with open(options.input_weight_path.rsplit(os.sep,1)[0] + os.sep + 'losses.pickle','wb') as pickle_loss:
+        with open(os.path.join(C.model_path, 'losses.pickle'), 'wb') as pickle_loss:
             pickle.dump(rpn_history, pickle_loss)
             pickle.dump(classifier_history, pickle_loss)
             pickle.dump(best_loss, pickle_loss)
@@ -207,184 +210,9 @@ try:
         if curr_val_loss < best_loss:
             print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
             best_loss = curr_val_loss
-            model_all.save_weights(C.model_path + model_name)
+            model_all.save_weights(os.path.join(C.model_path, model_name))
             
         print('Epoch took: {}'.format(time.time() - start_time))
     
 except Exception:
     print(traceback.format_exc())
-
-#==============================================================================
-# 
-# print('Starting training')
-# for epoch_num in range(num_epochs):
-# 
-#     progbar = generic_utils.Progbar(epoch_length)
-#     print('Epoch {}/{}'.format(epoch_num + 1, num_epochs))
-#     
-#     while True: #add early stopping for rpn and det
-# 
-#         try:
-#             
-#             #???
-#             if len(rpn_accuracy_rpn_monitor_train) == epoch_length and C.verbose:
-#                 mean_overlapping_bboxes = float(sum(rpn_accuracy_rpn_monitor_train))/len(rpn_accuracy_rpn_monitor_train)
-#                 rpn_accuracy_rpn_monitor_train = []
-#                 print('Average number of overlapping bounding boxes from RPN = {} for {} previous iterations'.format(mean_overlapping_bboxes, epoch_length))
-#                 if mean_overlapping_bboxes == 0:
-#                     print('RPN is not producing bounding boxes that overlap the ground truth boxes. Check RPN settings or keep training.')
-# 
-# 
-#             #X:
-#             #Y:
-#             #img_data:
-#             X, Y, img_data = next(data_gen_train)
-#             
-#             #train rpn und get rpn_train_loss
-#             rpn_train_loss = model_rpn.train_on_batch(X, Y)
-#             
-#             #rpn predictions
-#             P_rpn = model_rpn.predict_on_batch(X)
-#             
-#             #rpn predictions umformen zu RoI
-#             R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
-#             
-#             #X2: RoIs mit Koordinaten (x1, y1, w, h)
-#             #Y1: Ground truth Klassenlabel der RoIs [0,0,...,0,1,0,0]. Array mit .shape (1, num_rois, num_classes)
-#             #Y2: Ground truth regression targets der RoIs ohne die Background Klasse:
-#             #    y_class_regr_label und y_class_regr_coords in einem Array mit .shape = (1, num_rois, (4*num_classes-1)+(4*num_classes-1))
-#             #IouS: for debugging only
-#             # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
-#             X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data, C, class_mapping)            
-#             
-#             #wenn keine RoI gefunden wurde
-#             if X2 is None:
-#                 rpn_accuracy_rpn_monitor_train.append(0)
-#                 rpn_accuracy_for_epoch_train.append(0)
-#                 continue
-#             
-#             selected_rois_train = select_rois_for_detection(Y1)
-#     
-#             #train detektor und get det_train_loss
-#             det_train_loss = model_classifier.train_on_batch([X, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]])
-# 
-#             #speicher rpn losses
-#             train_losses[iter_num, 0] = rpn_train_loss[1]
-#             train_losses[iter_num, 1] = rpn_train_loss[2]
-#             #speicher detektor losses
-#             train_losses[iter_num, 2] = det_train_loss[1]
-#             train_losses[iter_num, 3] = det_train_loss[2]
-#             train_losses[iter_num, 4] = det_train_loss[3]
-#             
-#             iter_num += 1
-# 
-#             progbar.update(iter_num, [('rpn_cls', np.mean(train_losses[:iter_num, 0])), ('rpn_regr', np.mean(train_losses[:iter_num, 1])),
-# 									  ('detector_cls', np.mean(train_losses[:iter_num, 2])), ('detector_regr', np.mean(train_losses[:iter_num, 3]))])
-# 
-#             #Ende der Epoche
-#             if iter_num == epoch_length:
-# 
-#                 epoch_mean_losses[epoch_num,0] = np.mean(train_losses[:, 0])
-#                 epoch_mean_losses[epoch_num,1] = np.mean(train_losses[:, 1])
-#                 epoch_mean_losses[epoch_num,2] = np.mean(train_losses[:, 2])
-#                 epoch_mean_losses[epoch_num,3] = np.mean(train_losses[:, 3])
-#                 epoch_mean_losses[epoch_num,4] = np.mean(train_losses[:, 4])
-#                 
-#                 mean_overlapping_bboxes = float(sum(rpn_accuracy_for_epoch_train)) / len(rpn_accuracy_for_epoch_train) #??
-#                 rpn_accuracy_for_epoch_train = [] #??
-#                 
-# 
-#                 print('Mean number of bounding boxes from RPN overlapping ground truth boxes: {}'.format(mean_overlapping_bboxes))
-#                 print('Classifier accuracy for bounding boxes from RPN: {}'.format(epoch_mean_losses[epoch_num,4]))
-#                 print('Loss RPN classifier: {}'.format(epoch_mean_losses[epoch_num,0]))
-#                 print('Loss RPN regression: {}'.format(epoch_mean_losses[epoch_num,1]))
-#                 print('Loss Detector classifier: {}'.format(epoch_mean_losses[epoch_num,2]))
-#                 print('Loss Detector regression: {}'.format(epoch_mean_losses[epoch_num,3]))
-#                 print('Elapsed time: {}'.format(time.time() - start_time))
-#                 
-#                 curr_loss = epoch_mean_losses[epoch_num,0] + epoch_mean_losses[epoch_num,1] + epoch_mean_losses[epoch_num,2] + epoch_mean_losses[epoch_num,3]
-#                 print('Current Training Loss is: {}'.format(curr_loss))
-#                 
-#                 start_time = time.time()                
-#                 iter_num = 0
-#                 
-#                 
-#                 #validation
-#                 val_on_num_pictures = 200 #Anzahl der Batches (Bilder in diesem Fall) auf denen validiert werden soll
-#                 val_losses = np.zeros((val_on_num_pictures, 5))
-#                 print('validation start')
-#                 progbar2 = generic_utils.Progbar(val_on_num_pictures)
-#                 while True:
-# 
-#                     X_val, Y_val, img_data_val = next(data_gen_val)
-# 
-#                     #get rpn_val_loss
-#                     rpn_val_loss = model_rpn.test_on_batch(X_val, Y_val)
-# 
-#                     #get rpn predictions fuer detektor validation
-#                     predict_rpn_val = model_rpn.predict_on_batch(X_val)
-#                     
-#                     R = roi_helpers.rpn_to_roi(predict_rpn_val[0], predict_rpn_val[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
-#                     
-#                     X2_val, Y1_val, Y2_val, IouS_val = roi_helpers.calc_iou(R, img_data_val, C, class_mapping)
-# 
-#                     #wenn keine RoI gefunden wurde
-#                     if X2_val is None:
-#                         continue
-#                     
-#                     selected_rois_val = select_rois_for_detection(Y1_val)
-#                     #get det_val_loss
-#                     det_val_loss = model_classifier.test_on_batch([X_val, X2_val[:, selected_rois_val, :]], [Y1_val[:, selected_rois_val, :], Y2_val[:, selected_rois_val, :]])
-# 
-#                     #speicher rpn losses
-#                     val_losses[iter_num, 0] = rpn_val_loss[1]
-#                     val_losses[iter_num, 1] = rpn_val_loss[2]
-#                     #speicher detektor losses
-#                     val_losses[iter_num, 2] = det_val_loss[1]
-#                     val_losses[iter_num, 3] = det_val_loss[2]
-#                     val_losses[iter_num, 4] = det_val_loss[3]
-#                     
-#                     iter_num += 1
-#                     progbar2.update(iter_num, [('rpn_cls_val', np.mean(val_losses[:iter_num, 0])), ('rpn_regr_val', np.mean(val_losses[:iter_num, 1])),
-# 									  ('detector_cls_val', np.mean(val_losses[:iter_num, 2])), ('detector_regr_val', np.mean(val_losses[:iter_num, 3]))])
-# 
-#                     #Ende der Validation
-#                     if iter_num == val_on_num_pictures:
-#                         
-#                         epoch_mean_losses[epoch_num,5] = np.mean(val_losses[:, 0])
-#                         epoch_mean_losses[epoch_num,6] = np.mean(val_losses[:, 1])
-#                         epoch_mean_losses[epoch_num,7] = np.mean(val_losses[:, 2])
-#                         epoch_mean_losses[epoch_num,8] = np.mean(val_losses[:, 3])
-#                         epoch_mean_losses[epoch_num,9] = np.mean(val_losses[:, 4])
-# 
-#                         
-#                         print('Validation Mean number of bounding boxes from RPN overlapping ground truth boxes: {}'.format(mean_overlapping_bboxes))
-#                         print('Validation Classifier accuracy for bounding boxes from RPN: {}'.format(epoch_mean_losses[epoch_num,9]))
-#                         print('Validation Loss RPN classifier: {}'.format(epoch_mean_losses[epoch_num,5]))
-#                         print('Validation Loss RPN regression: {}'.format(epoch_mean_losses[epoch_num,6]))
-#                         print('Validation Loss Detector classifier: {}'.format(epoch_mean_losses[epoch_num,7]))
-#                         print('Validation Loss Detector regression: {}'.format(epoch_mean_losses[epoch_num,8]))
-#                         print('Elapsed time: {}'.format(time.time() - start_time))
-#                         
-#                         curr_val_loss = epoch_mean_losses[epoch_num,5] + epoch_mean_losses[epoch_num,6] + epoch_mean_losses[epoch_num,7] + epoch_mean_losses[epoch_num,8]
-#                         print('Current Validation Loss is: {}'.format(curr_val_loss))
-# 
-#                         if curr_val_loss < best_loss: #anpassen an validation loss
-#                             print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
-#                             best_loss = curr_val_loss
-#                             model_all.save_weights(C.model_path + model_name)
-#                         start_time = time.time()
-#                         save_plots(epoch_mean_losses, epoch_num+1, C.model_path)
-#                         print('Saving plots took: {}'.format(time.time() - start_time))
-#                         start_time = time.time()
-#                         iter_num = 0
-#                         break
-#                 
-#                 break
-#             
-#             
-#         except Exception as e:
-#             print('Exception: {}'.format(e))
-#             continue
-# print('Training complete, exiting.')
-#==============================================================================
