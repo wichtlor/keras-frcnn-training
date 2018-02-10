@@ -5,6 +5,7 @@ import time
 import numpy as np
 from optparse import OptionParser
 import traceback
+import os
 
 from keras import backend as K
 from keras.models import Model
@@ -73,9 +74,8 @@ try:
     	print('Not a valid model')
     	raise ValueError
     
-    # check if weight path was passed via command line
-    if options.input_weight_path:
-        C.base_net_weights = options.input_weight_path
+    
+
      
      
     #liesst Annotationfiles
@@ -135,20 +135,23 @@ try:
     model_all = Model([img_input, roi_input], rpn + classifier)
     
     
-    
-    #==============================================================================
-    # try:
-    # 	print('loading weights from {}'.format(C.base_net_weights))
-    # 	model_rpn.load_weights(C.base_net_weights, by_name=True)
-    # #	model_classifier.load_weights(C.base_net_weights, by_name=True)
-    # except:
-    # 	print('Could not load pretrained model weights. Weights can be found in the keras application folder \
-    # 		https://github.com/fchollet/keras/tree/master/keras/applications')
-    #==============================================================================
-    
-    
-    
-    
+    rpn_history = []
+    classifier_history = []
+    # check if weight path was passed via command line
+    if options.input_weight_path:
+        C.base_net_weights = options.input_weight_path
+        try:
+            print('loading weights from {}'.format(C.base_net_weights))
+            model_rpn.load_weights(C.base_net_weights, by_name=True)
+            model_classifier.load_weights(C.base_net_weights, by_name=True)
+        except:
+            print('Model weights konnten nicht geladen werden.')
+
+        if 'losses.pickle' in os.listdir(options.input_weight_path.rsplit(os.sep,1)[0]):
+            with open(options.input_weight_path.rsplit(os.sep,1)[0] + os.sep + 'losses.pickle', 'rb') as read_loss:
+                rpn_history = pickle.load(read_loss)
+                classifier_history = pickle.load(read_loss)
+
     #Modelle kompilieren
     model_rpn.compile(optimizer=Adam(lr=0.00001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
     model_classifier.compile(optimizer=Adam(lr=0.00001), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
@@ -176,23 +179,28 @@ try:
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
-    rpn_history = []
-    classifier_history = []
-    
     
     
     for epoch_num in range(num_epochs):
-        print('Epoche {}/{}'.format(epoch_num+1,num_epochs))
+        print('Trainings Epoche {}/{}'.format(len(rpn_history)+1,num_epochs))
         start_time = time.time()
         
+        #Trainiere RPN fuer eine Epoche
         hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, workers=4)
         rpn_history.append(hist.history)
         
+        #Trainiere den Classifier für eine Epoche
         hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, workers=4)
         classifier_history.append(hist.history)
         
+        #pickle losses um auch nach abgebrochenem und weitergefuehrtem Training vollstaendige Lossplots zu bekommen
+        with open('./losses.pickle','wb') as pickle_loss:
+            pickle.dump(rpn_history,pickle_loss)
+            pickle.dump(classifier_history,pickle_loss)
+        #speichere Plots aller Losses des Modells
         curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path, len(classes_count))
         
+        #Wenn Validationloss sich verbessert, dann speichere weights
         if curr_val_loss < best_loss:
             print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
             best_loss = curr_val_loss
