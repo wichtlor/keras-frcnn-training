@@ -6,14 +6,11 @@ import copy
 
 import threading
 import itertools
-from keras.models import load_model
-from keras.layers import Input
-from keras.models import Model
 from keras import backend as K
 from keras_frcnn import roi_helpers as roi_helpers
 from keras_frcnn import data_augment
-from netze import mynet_small as nn
-import tensorflow as tf
+
+
 
 
 def union(au, bu, area_intersection):
@@ -385,35 +382,21 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
 
 @threadsafe_generator
 def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length_calc_function, backend, mode='train'):
-#==============================================================================
-#     img_input = Input(shape=(None, None, 3))
-#     shared_layers = nn.nn_base(img_input, trainable=True)
-#     rpn = nn.rpn(shared_layers, 9, trainable=True)
-#     model_rpn = Model(img_input, rpn[:2])
-#     model_rpn.load_weights(C.model_path + 'model_frcnn.hdf5', by_name=True)
-#     model_rpn.compile(optimizer='sgd', loss='mse')
-#==============================================================================
     with graph.as_default():
-        #model_rpn = load_model(C.model_path + 'model_frcnn.hdf5')
         model_rpn._make_predict_function()
-
-    
-    
+        
     sample_selector = SampleSelector(class_count)
 
     while True:
-
         if mode == 'train':
             np.random.shuffle(all_img_data)
             
         for img_data in all_img_data:
-
             try:
                 #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
                 if C.balanced_classes and sample_selector.skip_sample_for_balanced_class(img_data):
                     continue
 
-                
                 # read in image, and optionally add augmentation
                 if mode == 'train':
                     img_data_aug, x_img = data_augment.augment(img_data, C, augment=True)
@@ -446,10 +429,8 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
                 
                 if backend == 'tf':
                     x_img = np.transpose(x_img, (0, 2, 3, 1))
-                
 
                 #rpn predictions
-
                 with graph.as_default():
                     P_rpn = model_rpn.predict(x_img)
 
@@ -464,7 +445,6 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
                 # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
                 X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data_aug, C, C.class_mapping)
 
-                
                 #wenn keine RoI gefunden wurde
                 if X2 is None:
                     continue

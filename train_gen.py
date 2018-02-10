@@ -14,191 +14,194 @@ from keras.utils import generic_utils
 from keras_frcnn import config
 from keras_frcnn.pascal_voc_parser import get_data
 from keras_frcnn import losses as losses
-from keras_frcnn import roi_helpers as roi_helpers
 
-from visualization.plots import save_plots, save_plots_from_history
+from visualization.plots import save_plots_from_history
 from module import data_generators
 
-import tensorflow as tf
+try:
 
-parser = OptionParser()
-
-parser.add_option("-p", "--path", dest="train_path", help="Path to training data.", default="~/VOCdevkit/")
-parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=32)
-parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='mynet') #change default to mine
-parser.add_option("--hf", dest="horizontal_flips", help="Augment with horizontal flips in training. (Default=false).", action="store_true", default=False)
-parser.add_option("--vf", dest="vertical_flips", help="Augment with vertical flips in training. (Default=false).", action="store_true", default=False)
-parser.add_option("--rot", "--rot_90", dest="rot_90", help="Augment with 90 degree rotations in training. (Default=false).",
-				  action="store_true", default=False)
-parser.add_option("--num_epochs", type="int", dest="num_epochs", help="Number of epochs.", default=2000)
-parser.add_option("--config_filename", dest="config_filename", help=
-				"Location to store all the metadata related to the training (to be used when testing).",
-				default="config.pickle")
-parser.add_option("--output_model_path", dest="output_model_path", help="Output path for model.", default='./train_results/')
-parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
-parser.add_option("--model_name", dest="model_name", help="Output name of model weights.", default='model_frcnn.hdf5')
-(options, args) = parser.parse_args()
-
-
-
-
-C = config.Config()
-
-# pass the settings from the command line, and persist them in the config object
-# augmented training
-C.use_horizontal_flips = bool(options.horizontal_flips)
-C.use_vertical_flips = bool(options.vertical_flips)
-C.rot_90 = bool(options.rot_90)
-
-# Speicherpfad des trainierten Modells
-C.model_path = options.output_model_path
-model_name = options.model_name
-
-#batch size fuer den Detektor
-C.num_rois = int(options.num_rois)
-
-if options.network == 'vgg':
-	C.network = 'vgg'
-	from keras_frcnn import vgg as nn
-elif options.network == 'resnet50':
-	from keras_frcnn import resnet as nn
-	C.network = 'resnet50'
-elif options.network == 'mynet':
-	from netze import mynet as nn
-	C.network = 'mynet'
-elif options.network == 'mynet_small':
-	from netze import mynet_small as nn
-	C.network = 'mynet_small'
-else:
-	print('Not a valid model')
-	raise ValueError
-
-# check if weight path was passed via command line
-if options.input_weight_path:
-    C.base_net_weights = options.input_weight_path
- 
- 
-#liesst Annotationfiles
-#   all_imgs: ground_truth Bilddaten
-#   classes_count: Anzahl jeder einzelnen Objektklasse
-#   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
-all_imgs, classes_count, class_mapping = get_data(options.train_path)
-
-#fuegt background klasse hinzu
-if 'bg' not in classes_count:
-    classes_count['bg'] = 0
-    class_mapping['bg'] = len(class_mapping)
-
-#persist class_mapping in config
-C.class_mapping = class_mapping
-
-print('Training images per class:')
-pprint.pprint(classes_count)
-print('Num classes (including bg) = {}'.format(len(classes_count)))
-
-#name of pickled config file
-config_output_filename = C.model_path + options.config_filename
-with open(config_output_filename, 'wb') as config_f:
-	pickle.dump(C,config_f)
-	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
- 
-#random.shuffle(all_imgs)#bilder werden auch noch im data generator geshuffled...???
-
-#teile all_imgs in Trainings- und Validationdatensatz
-train_imgs = [s for s in all_imgs if s['imageset'] == 'trainval']
-val_imgs = [s for s in all_imgs if s['imageset'] == 'test']
-print('Num train samples {}'.format(len(train_imgs)))
-print('Num val samples {}'.format(len(val_imgs)))
-
-
-
-#Netz-Eingabetensor
-input_shape_img = (None, None, 3) #width*height*colorchannel
-img_input = Input(shape=input_shape_img)
-roi_input = Input(shape=(None, 4)) #center_x,center_y,width,height
-
-# define the base network (resnet here, can be VGG, Inception, etc)
-shared_layers = nn.nn_base(img_input, trainable=True)
-
-# define the RPN, built on the base layers
-num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
-rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
-
-
-#RoI Klassifikator 
-classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
-
-#Instantiierung der Modelle
-model_classifier = Model([img_input, roi_input], classifier)
-model_rpn = Model(img_input, rpn[:2])
-# this is a model that holds both the RPN and the classifier, used to load/save weights for the models
-model_all = Model([img_input, roi_input], rpn + classifier)
-
-
-
-#==============================================================================
-# try:
-# 	print('loading weights from {}'.format(C.base_net_weights))
-# 	model_rpn.load_weights(C.base_net_weights, by_name=True)
-# #	model_classifier.load_weights(C.base_net_weights, by_name=True)
-# except:
-# 	print('Could not load pretrained model weights. Weights can be found in the keras application folder \
-# 		https://github.com/fchollet/keras/tree/master/keras/applications')
-#==============================================================================
-
-
-
-
-#Modelle kompilieren
-model_rpn.compile(optimizer=Adam(lr=0.00001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
-model_classifier.compile(optimizer=Adam(lr=0.00001), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
-model_all.compile(optimizer='sgd', loss='mae')
-model_all.summary()
-
-
-rpn_accuracy_rpn_monitor_train = []
-rpn_accuracy_for_epoch_train = []
-
-graph = K.get_session().graph
-
-#
-data_gen_train_rpn = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-data_gen_val_rpn = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
-data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-
-
-epoch_length = 1000
-validation_length = 300
-num_epochs = int(options.num_epochs)
-
-best_loss = np.Inf
-train_losses = np.zeros((epoch_length, 5))
-epoch_mean_losses = np.zeros((num_epochs, 10))
-
-rpn_history = []
-classifier_history = []
-
-
-
-for epoch_num in range(num_epochs):
-    print('Epoche {}/{}'.format(epoch_num+1,num_epochs))
-    start_time = time.time()
+    parser = OptionParser()
     
-    hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, workers=4)
-    rpn_history.append(hist.history)
+    parser.add_option("-p", "--path", dest="train_path", help="Path to training data.", default="~/VOCdevkit/")
+    parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=32)
+    parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='mynet') #change default to mine
+    parser.add_option("--hf", dest="horizontal_flips", help="Augment with horizontal flips in training. (Default=false).", action="store_true", default=False)
+    parser.add_option("--vf", dest="vertical_flips", help="Augment with vertical flips in training. (Default=false).", action="store_true", default=False)
+    parser.add_option("--rot", "--rot_90", dest="rot_90", help="Augment with 90 degree rotations in training. (Default=false).",
+    				  action="store_true", default=False)
+    parser.add_option("--num_epochs", type="int", dest="num_epochs", help="Number of epochs.", default=2000)
+    parser.add_option("--config_filename", dest="config_filename", help=
+    				"Location to store all the metadata related to the training (to be used when testing).",
+    				default="config.pickle")
+    parser.add_option("--output_model_path", dest="output_model_path", help="Output path for model.", default='./train_results/')
+    parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
+    parser.add_option("--model_name", dest="model_name", help="Output name of model weights.", default='model_frcnn.hdf5')
+    (options, args) = parser.parse_args()
     
-    hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, workers=4)
-    classifier_history.append(hist.history)
     
-    curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path, len(classes_count))
     
-    if curr_val_loss < best_loss:
-        print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
-        best_loss = curr_val_loss
-        model_all.save_weights(C.model_path + model_name)
+    
+    C = config.Config()
+    
+    # pass the settings from the command line, and persist them in the config object
+    # augmented training
+    C.use_horizontal_flips = bool(options.horizontal_flips)
+    C.use_vertical_flips = bool(options.vertical_flips)
+    C.rot_90 = bool(options.rot_90)
+    
+    # Speicherpfad des trainierten Modells
+    C.model_path = options.output_model_path
+    model_name = options.model_name
+    
+    #batch size fuer den Detektor
+    C.num_rois = int(options.num_rois)
+    
+    if options.network == 'vgg':
+    	C.network = 'vgg'
+    	from keras_frcnn import vgg as nn
+    elif options.network == 'resnet50':
+    	from keras_frcnn import resnet as nn
+    	C.network = 'resnet50'
+    elif options.network == 'mynet':
+    	from netze import mynet as nn
+    	C.network = 'mynet'
+    elif options.network == 'mynet_small':
+    	from netze import mynet_small as nn
+    	C.network = 'mynet_small'
+    else:
+    	print('Not a valid model')
+    	raise ValueError
+    
+    # check if weight path was passed via command line
+    if options.input_weight_path:
+        C.base_net_weights = options.input_weight_path
+     
+     
+    #liesst Annotationfiles
+    #   all_imgs: ground_truth Bilddaten
+    #   classes_count: Anzahl jeder einzelnen Objektklasse
+    #   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
+    all_imgs, classes_count, class_mapping = get_data(options.train_path)
+    
+    #fuegt background klasse hinzu
+    if 'bg' not in classes_count:
+        classes_count['bg'] = 0
+        class_mapping['bg'] = len(class_mapping)
+    
+    #persist class_mapping in config
+    C.class_mapping = class_mapping
+    
+    print('Training images per class:')
+    pprint.pprint(classes_count)
+    print('Num classes (including bg) = {}'.format(len(classes_count)))
+    
+    #name of pickled config file
+    config_output_filename = C.model_path + options.config_filename
+    with open(config_output_filename, 'wb') as config_f:
+    	pickle.dump(C,config_f)
+    	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
+     
+    #random.shuffle(all_imgs)#bilder werden auch noch im data generator geshuffled...???
+    
+    #teile all_imgs in Trainings- und Validationdatensatz
+    train_imgs = [s for s in all_imgs if s['imageset'] == 'trainval']
+    val_imgs = [s for s in all_imgs if s['imageset'] == 'test']
+    print('Num train samples {}'.format(len(train_imgs)))
+    print('Num val samples {}'.format(len(val_imgs)))
+    
+    
+    
+    #Netz-Eingabetensor
+    input_shape_img = (None, None, 3) #width*height*colorchannel
+    img_input = Input(shape=input_shape_img)
+    roi_input = Input(shape=(None, 4)) #center_x,center_y,width,height
+    
+    # define the base network (resnet here, can be VGG, Inception, etc)
+    shared_layers = nn.nn_base(img_input, trainable=True)
+    
+    # define the RPN, built on the base layers
+    num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
+    rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
+    
+    
+    #RoI Klassifikator 
+    classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
+    
+    #Instantiierung der Modelle
+    model_classifier = Model([img_input, roi_input], classifier)
+    model_rpn = Model(img_input, rpn[:2])
+    # this is a model that holds both the RPN and the classifier, used to load/save weights for the models
+    model_all = Model([img_input, roi_input], rpn + classifier)
+    
+    
+    
+    #==============================================================================
+    # try:
+    # 	print('loading weights from {}'.format(C.base_net_weights))
+    # 	model_rpn.load_weights(C.base_net_weights, by_name=True)
+    # #	model_classifier.load_weights(C.base_net_weights, by_name=True)
+    # except:
+    # 	print('Could not load pretrained model weights. Weights can be found in the keras application folder \
+    # 		https://github.com/fchollet/keras/tree/master/keras/applications')
+    #==============================================================================
+    
+    
+    
+    
+    #Modelle kompilieren
+    model_rpn.compile(optimizer=Adam(lr=0.00001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
+    model_classifier.compile(optimizer=Adam(lr=0.00001), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
+    model_all.compile(optimizer='sgd', loss='mae')
+    model_all.summary()
+    
+    
+    rpn_accuracy_rpn_monitor_train = []
+    rpn_accuracy_for_epoch_train = []
+    
+    graph = K.get_session().graph
+    
+    #
+    data_gen_train_rpn = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+    data_gen_val_rpn = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
+    data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+    data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+    
+    
+    epoch_length = 1000
+    validation_length = 300
+    num_epochs = int(options.num_epochs)
+    
+    best_loss = np.Inf
+    train_losses = np.zeros((epoch_length, 5))
+    epoch_mean_losses = np.zeros((num_epochs, 10))
+    
+    rpn_history = []
+    classifier_history = []
+    
+    
+    
+    for epoch_num in range(num_epochs):
+        print('Epoche {}/{}'.format(epoch_num+1,num_epochs))
+        start_time = time.time()
         
-    print('Epoch took: {}'.format(time.time() - start_time))
+        hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=2, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=2, workers=4)
+        rpn_history.append(hist.history)
+        
+        hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=2, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=2, workers=4)
+        classifier_history.append(hist.history)
+        
+        curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path, len(classes_count))
+        
+        if curr_val_loss < best_loss:
+            print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
+            best_loss = curr_val_loss
+            model_all.save_weights(C.model_path + model_name)
+            
+        print('Epoch took: {}'.format(time.time() - start_time))
+    
+except Exception as e:
+    print(e)
+
 #==============================================================================
 # 
 # print('Starting training')
