@@ -4,6 +4,7 @@ import pprint
 import time
 import numpy as np
 from optparse import OptionParser
+import traceback
 
 from keras import backend as K
 from keras.models import Model
@@ -199,8 +200,8 @@ try:
             
         print('Epoch took: {}'.format(time.time() - start_time))
     
-except Exception as e:
-    print(e)
+except Exception:
+    print(traceback.format_exc())
 
 #==============================================================================
 # 
