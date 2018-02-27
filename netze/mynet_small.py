@@ -23,23 +23,26 @@ def nn_base(img_input, trainable=False):
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
 
     # Block 2
-    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
-    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
+    x = Conv2D(96, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
+    x = Conv2D(96, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
 
     # Block 3
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
 
     # Block 4
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
+    x = Conv2D(160, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
+    x = Conv2D(160, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
+    x = Conv2D(160, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
 
     # Block 5
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block5_conv1')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block5_conv2')(x)
+    x = Conv2D(192, (3, 3), activation='relu', padding='same', name='block5_conv1')(x)
+    x = Conv2D(192, (3, 3), activation='relu', padding='same', name='block5_conv2')(x)
+    x = Conv2D(192, (3, 3), activation='relu', padding='same', name='block5_conv3')(x)
 
     return x
     
@@ -49,7 +52,7 @@ def rpn(base_layers, num_anchors, trainable=False):
     dann Objectness Scores und BBox Regression stattfinden.
     '''
     
-    x = Conv2D(512, (3, 3), padding='same', activation='relu', kernel_initializer='normal', name='rpn_conv1')(base_layers)
+    x = Conv2D(192, (3, 3), padding='same', activation='relu', kernel_initializer='normal', name='rpn_conv1')(base_layers)
 
     x_class = Conv2D(num_anchors, (1, 1), activation='sigmoid', kernel_initializer='uniform', name='rpn_out_class')(x)
     x_regr = Conv2D(num_anchors * 4, (1, 1), activation='linear', kernel_initializer='zero', name='rpn_out_regress')(x)
