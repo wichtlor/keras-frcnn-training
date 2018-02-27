@@ -7,6 +7,8 @@ from optparse import OptionParser
 import traceback
 import os
 
+import tensorflow as tf
+
 from keras import backend as K
 from keras.models import Model
 from keras.layers import Input
@@ -22,6 +24,10 @@ from module import data_generators
 
 try:
 
+    tf_config = tf.ConfigProto()
+    tf_config.gpu_options.allocator_type = 'BFC'
+    tf_config.gpu_options.allow_growth = True
+    
     parser = OptionParser()
     
     parser.add_option("-p", "--path", dest="train_path", help="Path to training data.", default="~/VOCdevkit/")
@@ -125,18 +131,6 @@ try:
     val_imgs = trainval_imgs[num_train_imgs:]
     print('Num train samples {}'.format(len(train_imgs)))
     print('Num val samples {}'.format(len(val_imgs)))
-    
-    print(train_imgs[0]['filepath'])
-    print(train_imgs[1]['filepath'])
-    print(train_imgs[2]['filepath'])
-    print(train_imgs[3]['filepath'])
-    print(train_imgs[4]['filepath'])
-    print(train_imgs[5]['filepath'])
-    print(train_imgs[6]['filepath'])
-    print(train_imgs[7]['filepath'])
-    print(train_imgs[8]['filepath'])
-    print(train_imgs[9]['filepath'])
-    print(train_imgs[10]['filepath'])
     
     
     #Netz-Eingabetensor
