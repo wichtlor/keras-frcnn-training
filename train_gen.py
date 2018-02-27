@@ -209,8 +209,6 @@ try:
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
-    print("Anzahl Parameter: ")
-    print(np.sum([np.prod(v.get_shape().as_list()) for v in tf.global_variables()]))
     
     for epoch_num in range(num_epochs):
         print('Trainings Epoche {}/{}'.format(len(rpn_history)+1,num_epochs))
