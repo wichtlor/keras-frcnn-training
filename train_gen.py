@@ -67,7 +67,7 @@ try:
     elif options.network == 'resnet50':
     	from keras_frcnn import resnet as nn
     	C.network = 'resnet50'
-    elif options.network == 'mynet':
+    elif options.network == 'vgg16':
     	from netze import mynet as nn
     	C.network = 'mynet'
     elif options.network == 'mynet_small':
