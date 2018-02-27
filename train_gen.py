@@ -38,6 +38,9 @@ try:
     parser.add_option("--output_model_path", dest="output_model_path", help="Output path for model.", default='./train_results/')
     parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
     parser.add_option("--model_name", dest="model_name", help="Output name of model weights.", default='model_frcnn.hdf5')
+    parser.add_option("--seed", dest="use_seed", help="Benutze den random.seed eines vorangegangenen Trainings. seed.pickle muss im Ordner des zu trainierenden Modells liegen.",
+                      action="store_true", default=False)
+
     (options, args) = parser.parse_args()
     
     
@@ -74,9 +77,7 @@ try:
     	print('Not a valid model')
     	raise ValueError
     
-    
 
-     
      
     #liesst Annotationfiles
     #   all_imgs: ground_truth Bilddaten
@@ -101,15 +102,41 @@ try:
     with open(config_output_filename, 'wb') as config_f:
     	pickle.dump(C,config_f)
     	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
-     
-    #random.shuffle(all_imgs)#bilder werden auch noch im data generator geshuffled...???
+
+
+    #falls ein Training abgebrochen wurde und weitergefuehrt werden soll oder man immer auf den selben Bildern Trainieren und Validieren moechte
+    #kann der seed festgelegt werden
+    seed_path = os.path.join(C.model_path, 'seed.pickle')
+    if options.use_seed:
+        with open(seed_path, 'rb') as random_seed:
+            train_seed = pickle.load(random_seed)
+    else:
+        train_seed = random.random()
+        with open(seed_path, 'wb') as random_seed:
+            pickle.dump(train_seed, random_seed)
     
-    #teile all_imgs in Trainings- und Validationdatensatz
-    train_imgs = [s for s in all_imgs if s['imageset'] == 'trainval']
-    val_imgs = [s for s in all_imgs if s['imageset'] == 'test']
+    random.seed(train_seed)
+    
+    #teile den trainval Datensatz in Trainings- und Validationdatensatz
+    trainval_imgs = [s for s in all_imgs if s['imageset'] == 'trainval']
+    random.shuffle(trainval_imgs)
+    num_train_imgs = int((len(trainval_imgs)/100.)*80) #benutze 80 Prozent als Trainingsdaten und den Rest als Validation
+    train_imgs = trainval_imgs[:num_train_imgs]
+    val_imgs = trainval_imgs[num_train_imgs:]
     print('Num train samples {}'.format(len(train_imgs)))
     print('Num val samples {}'.format(len(val_imgs)))
     
+    print(train_imgs[0]['filepath'])
+    print(train_imgs[1]['filepath'])
+    print(train_imgs[2]['filepath'])
+    print(train_imgs[3]['filepath'])
+    print(train_imgs[4]['filepath'])
+    print(train_imgs[5]['filepath'])
+    print(train_imgs[6]['filepath'])
+    print(train_imgs[7]['filepath'])
+    print(train_imgs[8]['filepath'])
+    print(train_imgs[9]['filepath'])
+    print(train_imgs[10]['filepath'])
     
     
     #Netz-Eingabetensor
