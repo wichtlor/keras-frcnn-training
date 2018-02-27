@@ -27,6 +27,7 @@ try:
     tf_config = tf.ConfigProto()
     tf_config.gpu_options.allocator_type = 'BFC'
     tf_config.gpu_options.allow_growth = True
+    session = tf.InteractiveSession(config=tf_config)
     
     parser = OptionParser()
     
