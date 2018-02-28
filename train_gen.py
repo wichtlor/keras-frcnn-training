@@ -6,10 +6,6 @@ import numpy as np
 from optparse import OptionParser
 import traceback
 import os
-#==============================================================================
-# 
-# import tensorflow as tf
-#==============================================================================
 
 from keras import backend as K
 from keras.models import Model
@@ -26,13 +22,7 @@ from visualization.plots import save_plots_from_history
 from module import data_generators
 
 try:
-#==============================================================================
-# 
-#     tf_config = tf.ConfigProto()
-#     tf_config.gpu_options.allocator_type = 'BFC'
-#     tf_config.gpu_options.allow_growth = True
-#     session = tf.InteractiveSession(config=tf_config)
-#==============================================================================
+
     
     parser = OptionParser()
     
