@@ -244,7 +244,7 @@ try:
             print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
             best_loss = curr_val_loss
             model_all.save_weights(os.path.join(C.model_path, model_name))
-             
+            
         print('Epoch took: {}'.format(time.time() - start_time))
     
 except Exception:
