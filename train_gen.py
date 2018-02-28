@@ -192,16 +192,16 @@ try:
     data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     
     
-    epoch_length = 1000
-    validation_length = 300
+    epoch_length = 5
+    validation_length = 2
     num_epochs = int(options.num_epochs)
     
 
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
-    rpn_es = EarlyStopping(monitor='val_loss', min_delta=0, patience=15)
-    det_es = EarlyStopping(monitor='val_loss', min_delta=0, patience=15)
+    rpn_es = EarlyStopping(monitor='val_loss', min_delta=0, patience=3) #todo: bei fortgefahrenem Training resettet patience
+    det_es = EarlyStopping(monitor='val_loss', min_delta=0, patience=3)
     
     for epoch_num in range(num_epochs):
         print('Trainings Epoche {}/{}'.format(len(rpn_history)+1,num_epochs))
@@ -236,6 +236,10 @@ try:
             model_all.save_weights(os.path.join(C.model_path, model_name))
             
         print('Epoch took: {}'.format(time.time() - start_time))
-    
+        
+        if rpn_es.stopped_epoch!=0 and det_es.stopped_epoch!=0:
+            print('Training wurde beendet durch early stopping nach {} RPN Epochen und {} Detektor Epochen'.format(rpn_es.stopped_epoch,det_es.stopped_epoch))
+            break
+        
 except Exception:
     print(traceback.format_exc())
