@@ -193,7 +193,7 @@ try:
     data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     
     
-    epoch_length = 5
+    epoch_length = 2
     validation_length = 2
     num_epochs = int(options.num_epochs)
     
@@ -201,8 +201,8 @@ try:
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
-    rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=3) #todo: bei fortgefahrenem Training resettet patience
-    det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=3)
+    rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=2) #todo: bei fortgefahrenem Training resettet patience
+    det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=2)
     rpn_stopped_epoch = 0
     det_stopped_epoch = 0
     
