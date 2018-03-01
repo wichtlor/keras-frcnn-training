@@ -215,7 +215,7 @@ try:
             rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, callbacks=[rpn_es], verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
             
-            if rpn_es.stopped_epoch!=0:
+            if rpn_es.stop_train:
                 print('RPN STOP rpn_es.stopped_epoch={}'.format(rpn_es.stopped_epoch))
                 rpn_stopped_epoch = epoch_num
         else:
@@ -224,7 +224,7 @@ try:
         if det_stopped_epoch==0:
             det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, callbacks=[det_es], verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             classifier_history.append(det_hist.history)
-            if det_es.stopped_epoch!=0:
+            if det_es.stop_train:
                 print('DET STOP det_es.stopped_epoch={}'.format(det_es.stopped_epoch))
                 det_stopped_epoch = epoch_num
         else:

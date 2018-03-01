@@ -31,7 +31,7 @@ class MyEarlyStopping(Callback):
         self.min_delta = min_delta
         self.wait = 0
         self.stopped_epoch = 0
-
+        self.stop_train = False
         if mode not in ['auto', 'min', 'max']:
             warnings.warn('EarlyStopping mode %s is unknown, '
                           'fallback to auto mode.' % mode,
@@ -80,6 +80,7 @@ class MyEarlyStopping(Callback):
             self.wait += 1
             if self.wait >= self.patience:
                 print('patience ran out: stop')
+                self.stop_train = True
                 self.stopped_epoch = epoch
                 self.model.stop_training = True
 
