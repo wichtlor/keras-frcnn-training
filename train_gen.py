@@ -193,16 +193,16 @@ try:
     data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     
     
-    epoch_length = 2
-    validation_length = 2
+    epoch_length = 1000
+    validation_length = 300
     num_epochs = int(options.num_epochs)
     
 
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
-    rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=2) #todo: bei fortgefahrenem Training resettet patience
-    det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=2)
+    rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20) #todo: bei fortgefahrenem Training resettet patience
+    det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20)
     rpn_stopped_epoch = 0
     det_stopped_epoch = 0
     
@@ -214,19 +214,23 @@ try:
         if not rpn_es.stop_train:
             rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, callbacks=[rpn_es], verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
+            
+            if rpn_stopped_epoch==0 and rpn_es.stop_train:
+                rpn_stopped_epoch = epoch_num
         else:
             rpn_history.append(rpn_hist.history)
-            if rpn_stopped_epoch==0:
-                rpn_stopped_epoch = epoch_num
+
             
         
         if not det_es.stop_train:
             det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, callbacks=[det_es], verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             classifier_history.append(det_hist.history)
+            
+            if det_stopped_epoch==0 and det_es.stop_train:
+                det_stopped_epoch = epoch_num
         else:
             classifier_history.append(det_hist.history)
-            if det_stopped_epoch==0:
-                det_stopped_epoch = epoch_num
+
         
         #pickle losses um auch nach abgebrochenem und weitergefuehrtem Training vollstaendige Lossplots zu bekommen
         with open(os.path.join(C.model_path, 'losses.pickle'), 'wb') as pickle_loss:
