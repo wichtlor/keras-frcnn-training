@@ -20,6 +20,7 @@ from keras_frcnn import losses as losses
 
 from visualization.plots import save_plots_from_history
 from module import data_generators
+from module.earlystopping import MyEarlyStopping
 
 try:
 
@@ -200,23 +201,29 @@ try:
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
-    rpn_es = EarlyStopping(monitor='val_loss', min_delta=0, patience=3) #todo: bei fortgefahrenem Training resettet patience
-    det_es = EarlyStopping(monitor='val_loss', min_delta=0, patience=3)
+    rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=3) #todo: bei fortgefahrenem Training resettet patience
+    det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=3)
+    rpn_stopped_epoch = 0
+    det_stopped_epoch = 0
     
     for epoch_num in range(num_epochs):
         print('Trainings Epoche {}/{}'.format(len(rpn_history)+1,num_epochs))
         start_time = time.time()
         
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang die EarlyStopping callbacks das Training nicht beendet haben
-        if rpn_es.stopped_epoch==0:
+        if rpn_stopped_epoch==0:
             rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, callbacks=[rpn_es], verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
+            if rpn_es.stopped_epoch!=0:
+                rpn_stopped_epoch = epoch_num
         else:
             rpn_history.append(rpn_hist.history)
         
-        if det_es.stopped_epoch==0:
+        if det_stopped_epoch==0:
             det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, callbacks=[det_es], verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             classifier_history.append(det_hist.history)
+            if det_es.stopped_epoch!=0:
+                det_stopped_epoch = epoch_num
         else:
             classifier_history.append(det_hist.history)
         
@@ -237,8 +244,8 @@ try:
             
         print('Epoch took: {}'.format(time.time() - start_time))
         
-        if rpn_es.stopped_epoch!=0 and det_es.stopped_epoch!=0:
-            print('Training wurde beendet durch early stopping nach {} RPN Epochen und {} Detektor Epochen'.format(rpn_es.stopped_epoch,det_es.stopped_epoch))
+        if rpn_stopped_epoch!=0 and det_stopped_epoch!=0:
+            print('Training wurde beendet durch early stopping nach {} RPN Epochen und {} Detektor Epochen'.format(rpn_stopped_epoch,det_stopped_epoch))
             break
         
 except Exception:
