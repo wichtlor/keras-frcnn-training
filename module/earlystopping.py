@@ -75,11 +75,9 @@ class MyEarlyStopping(Callback):
         if self.monitor_op(current - self.min_delta, self.best):
             self.best = current
             self.wait = 0
-            print('new best: continue')
         else:
             self.wait += 1
             if self.wait >= self.patience:
-                print('patience ran out: stop')
                 self.stop_train = True
                 self.stopped_epoch = epoch
                 self.model.stop_training = True
