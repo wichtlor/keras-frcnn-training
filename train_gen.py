@@ -41,7 +41,7 @@ try:
     parser.add_option("--output_model_path", dest="output_model_path", help="Output path for model.", default='./train_results/')
     parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
     parser.add_option("--model_name", dest="model_name", help="Output name of model weights.", default='model_frcnn.hdf5')
-    parser.add_option("--seed", dest="use_seed", help="Benutze den random.seed eines vorangegangenen Trainings. seed.pickle muss im Ordner des zu trainierenden Modells liegen.",
+    parser.add_option("--resume_train", dest="resume_train", help="Lade Zustand des fortzufuehrenden Trainings.",
                       action="store_true", default=False)
 
     (options, args) = parser.parse_args()
@@ -104,17 +104,30 @@ try:
     	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
 
 
-    #falls ein Training abgebrochen wurde und weitergefuehrt werden soll oder man immer auf den selben Bildern Trainieren und Validieren moechte
-    #kann der seed festgelegt werden
-    seed_path = os.path.join(C.model_path, 'seed.pickle')
-    if options.use_seed:
-        with open(seed_path, 'rb') as random_seed:
-            train_seed = pickle.load(random_seed)
+    #falls ein Training abgebrochen wurde und weitergefuehrt werden soll wird der Zustand einiger Variablen wiederhergestellt
+    #train_seed wird wiederhergestellt um sicherzustellen, dass auf den selben Bildern traniert und validiert wird
+    #
+    resume_training_path = os.path.join(C.model_path, 'train_zustand.pickle')
+    if options.resume_train:
+        with open(resume_training_path, 'rb') as resume_train_file:
+            train_seed = pickle.load(resume_train_file)
+            rpn_es = pickle.load(resume_train_file)
+            det_es = pickle.load(resume_train_file)
+            rpn_stopped_epoch = pickle.load(resume_train_file)
+            det_stopped_epoch = pickle.load(resume_train_file)
+            last_improvement = pickle.load(resume_train_file)
+            incr_valsetsize = pickle.load(resume_train_file)
+            validation_length = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
-        with open(seed_path, 'wb') as random_seed:
-            pickle.dump(train_seed, random_seed)
-    
+        rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20) #todo: bei neugestartetem Training resettet patience
+        det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20)
+        rpn_stopped_epoch = 0
+        det_stopped_epoch = 0
+        last_improvement = 0
+        incr_valsetsize = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
+        validation_length = 300
+        
     random.seed(train_seed)
     
     #teile den trainval Datensatz in Trainings- und Validationdatensatz
@@ -191,22 +204,25 @@ try:
     
     
     epoch_length = 1000
-    validation_length = 300
+
     num_epochs = int(options.num_epochs)
     
 
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
-    rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20) #todo: bei neugestartetem Training resettet patience
-    det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20)
-    rpn_stopped_epoch = 0
-    det_stopped_epoch = 0
-    
+
     for epoch_num in range(num_epochs):
         print('Trainings Epoche {}/{}'.format(len(rpn_history)+1,num_epochs))
         start_time = time.time()
         
+        #Um die Trainingszeit gering zu halten wird mit einem kleinen Validationset begonnen das vergroessert wird
+        #falls das Training anfaengt zu stagnieren um dann Fluktuationen im Validationsfehler zu reduzieren
+        if last_improvement >= incr_valsetsize:
+            last_improvement = 0
+            validation_length = min(validation_length*2, len(val_imgs))
+            print('Vergroessere Validationsteps auf {}'.format(validation_length))
+
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang die EarlyStopping callbacks das Training nicht beendet haben
         if not rpn_es.stop_train:
             rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, callbacks=[rpn_es], verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
@@ -238,11 +254,30 @@ try:
         
         #Wenn Validationloss sich verbessert, dann speichere weights
         if curr_val_loss < best_loss:
-            print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
+            print('Total validation loss decreased from {} to {}, saving new best weights'.format(best_loss,curr_val_loss))
             best_loss = curr_val_loss
             model_all.save_weights(os.path.join(C.model_path, 'best_' + model_name))
-            
+            last_improvement = 0
+        else:
+            last_improvement += 1
+        model_all.save_weights(os.path.join(C.model_path, model_name))
+        
         print('Epoch took: {}'.format(time.time() - start_time))
+        
+        
+        #speichere aktuellen Zustand einiger Variablen um bei Abbruch und fortgefuehrtem Training den Zustand wiederherstellen zu koennen        
+        with open(resume_training_path, 'wb') as resume_train_file:
+            pickle.dump(train_seed, resume_train_file)
+            pickle.dump(rpn_es, resume_train_file)
+            pickle.dump(det_es, resume_train_file)
+            pickle.dump(rpn_stopped_epoch, resume_train_file)
+            pickle.dump(det_stopped_epoch, resume_train_file)
+            pickle.dump(last_improvement, resume_train_file)
+            pickle.dump(incr_valsetsize, resume_train_file)
+            pickle.dump(validation_length, resume_train_file)
+            pickle.dump(rpn_history, resume_train_file)
+            pickle.dump(classifier_history, resume_train_file)
+            pickle.dump(best_loss, resume_train_file)
         
         if rpn_es.stop_train and det_es.stop_train:
             print('Training wurde beendet durch early stopping nach {} RPN Epochen und {} Detektor Epochen.'.format(rpn_stopped_epoch,det_stopped_epoch))
