@@ -70,9 +70,6 @@ try:
     elif options.network == 'resnet50':
     	from keras_frcnn import resnet as nn
     	C.network = 'resnet50'
-    elif options.network == 'vgg16':
-    	from netze import mynet as nn
-    	C.network = 'mynet'
     elif options.network == 'mynet_small':
     	from netze import mynet_small as nn
     	C.network = 'mynet_small'
@@ -130,20 +127,20 @@ try:
     print('Num val samples {}'.format(len(val_imgs)))
     
     
-    #Netz-Eingabetensor
+    #Netz-Eingabetensoren
     input_shape_img = (None, None, 3) #width*height*colorchannel
     img_input = Input(shape=input_shape_img)
     roi_input = Input(shape=(None, 4)) #center_x,center_y,width,height
     
-    # define the base network (resnet here, can be VGG, Inception, etc)
+    #definiert den Graphen der BaseLayer
     shared_layers = nn.nn_base(img_input, trainable=True)
     
-    # define the RPN, built on the base layers
+    #baut auf dem Graphen der BaseLayer den RPN Graphen auf
     num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
     rpn = nn.rpn(shared_layers, num_anchors, trainable=True)
     
     
-    #RoI Klassifikator 
+    #definiert den Graphen vom Klassifikator 
     classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(classes_count), trainable=True)
     
     #Instantiierung der Modelle
@@ -201,7 +198,7 @@ try:
     train_losses = np.zeros((epoch_length, 5))
     epoch_mean_losses = np.zeros((num_epochs, 10))
     
-    rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20) #todo: bei fortgefahrenem Training resettet patience
+    rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20) #todo: bei neugestartetem Training resettet patience
     det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20)
     rpn_stopped_epoch = 0
     det_stopped_epoch = 0
@@ -220,8 +217,6 @@ try:
         else:
             rpn_history.append(rpn_hist.history)
 
-            
-        
         if not det_es.stop_train:
             det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, callbacks=[det_es], verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             classifier_history.append(det_hist.history)
@@ -245,7 +240,7 @@ try:
         if curr_val_loss < best_loss:
             print('Total validation loss decreased from {} to {}, saving weights'.format(best_loss,curr_val_loss))
             best_loss = curr_val_loss
-            model_all.save_weights(os.path.join(C.model_path, model_name))
+            model_all.save_weights(os.path.join(C.model_path, 'best_' + model_name))
             
         print('Epoch took: {}'.format(time.time() - start_time))
         

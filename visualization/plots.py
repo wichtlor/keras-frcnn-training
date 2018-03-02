@@ -9,7 +9,7 @@ def plot_loss(train_loss, val_loss, loss_name, path):
     fig.plot(val_loss, label='val')
     fig.set(xlabel='epoch', ylabel='loss', title=loss_name)
     fig.set_ylim(0)    
-    fig.legend()
+    fig.legend(loc=3)
     fig.grid()
     fig.figure.savefig(path + '{}.png'.format(loss_name))
     plt.close()
