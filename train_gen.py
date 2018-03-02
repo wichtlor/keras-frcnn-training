@@ -58,7 +58,7 @@ try:
     C.rot_90 = bool(options.rot_90)
     
     # Speicherpfad des trainierten Modells
-    C.model_path = options.output_model_path
+    model_path = options.output_model_path
     model_name = options.model_name
     
     #batch size fuer den Detektor
@@ -98,7 +98,7 @@ try:
     print('Num classes (including bg) = {}'.format(len(classes_count)))
     
     #name of pickled config file
-    config_output_filename = C.model_path + options.config_filename
+    config_output_filename = model_path + options.config_filename
     with open(config_output_filename, 'wb') as config_f:
     	pickle.dump(C,config_f)
     	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
@@ -107,7 +107,7 @@ try:
     #falls ein Training abgebrochen wurde und weitergefuehrt werden soll wird der Zustand einiger Variablen wiederhergestellt
     #train_seed wird wiederhergestellt um sicherzustellen, dass auf den selben Bildern traniert und validiert wird
     #
-    resume_training_path = os.path.join(C.model_path, 'train_zustand.pickle')
+    resume_training_path = os.path.join(model_path, 'train_zustand.pickle')
     if options.resume_train:
         with open(resume_training_path, 'rb') as resume_train_file:
             train_seed = pickle.load(resume_train_file)
@@ -244,23 +244,23 @@ try:
 
         
         #pickle losses um auch nach abgebrochenem und weitergefuehrtem Training vollstaendige Lossplots zu bekommen
-        with open(os.path.join(C.model_path, 'losses.pickle'), 'wb') as pickle_loss:
+        with open(os.path.join(model_path, 'losses.pickle'), 'wb') as pickle_loss:
             pickle.dump(rpn_history, pickle_loss)
             pickle.dump(classifier_history, pickle_loss)
             pickle.dump(best_loss, pickle_loss)
             
         #speichere Plots aller Losses des Modells
-        curr_val_loss = save_plots_from_history(rpn_history, classifier_history, C.model_path, len(classes_count))
+        curr_val_loss = save_plots_from_history(rpn_history, classifier_history, model_path, len(classes_count))
         
         #Wenn Validationloss sich verbessert, dann speichere weights
         if curr_val_loss < best_loss:
             print('Total validation loss decreased from {} to {}, saving new best weights'.format(best_loss,curr_val_loss))
             best_loss = curr_val_loss
-            model_all.save_weights(os.path.join(C.model_path, 'best_' + model_name))
+            model_all.save_weights(os.path.join(model_path, 'best_' + model_name))
             last_improvement = 0
         else:
             last_improvement += 1
-        model_all.save_weights(os.path.join(C.model_path, model_name))
+        model_all.save_weights(os.path.join(model_path, model_name))
         
         print('Epoch took: {}'.format(time.time() - start_time))
         

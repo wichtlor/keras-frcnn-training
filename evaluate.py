@@ -114,7 +114,8 @@ parser.add_option("-n", "--num_rois", type="int", dest="num_rois",
 parser.add_option("--config_filename", dest="config_filename", help=
                 "Location to read the metadata related to the training (generated when training).",
                 default="config.pickle")
-parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='resnet50')
+parser.add_option("--network", dest="network", help="Base network to use.", default='vgg')
+parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
 
 (options, args) = parser.parse_args()
 
@@ -124,8 +125,8 @@ if not options.test_path:   # if filename is not given
 config_output_filename = options.config_filename
 with open(config_output_filename, 'rb') as f_in:
     C = pickle.load(f_in)
- 
- 
+    
+C.model_path = options.input_weight_path
 
 if options.network == 'vgg':
     C.network = 'vgg'
