@@ -152,9 +152,11 @@ C.rot_90 = False
 img_path = options.test_path
 
 class_mapping = C.class_mapping
-
 if 'bg' not in class_mapping:
     class_mapping['bg'] = len(class_mapping)
+class_mapping = {v: k for k, v in class_mapping.iteritems()}
+print(class_mapping)
+
 
 all_imgs, _, _ = get_data(options.test_path)
 test_imgs = [s for s in all_imgs if s['imageset'] == 'test']
