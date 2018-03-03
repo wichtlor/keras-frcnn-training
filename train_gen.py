@@ -62,15 +62,12 @@ try:
     #batch size fuer den Detektor
     C.num_rois = int(options.num_rois)
     
-    if options.network == 'vgg':
-    	C.network = 'vgg'
-    	from keras_frcnn import vgg as nn
-    elif options.network == 'resnet50':
-    	from keras_frcnn import resnet as nn
-    	C.network = 'resnet50'
+    if options.network == 'mynet_small':
+        from netze import mynet_small as nn
+        C.network = 'mynet_small'
     elif options.network == 'mynet_small':
-    	from netze import mynet_small as nn
-    	C.network = 'mynet_small'
+        from netze import vgg16 as nn
+        C.network = 'vgg16'
     else:
     	print('Not a valid model')
     	raise ValueError
@@ -210,7 +207,7 @@ try:
             validation_length = min(validation_length*2, len(val_imgs))
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
-        #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang die EarlyStopping callbacks das Training nicht beendet haben
+        #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
         if wait < patience:
             rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
