@@ -14,14 +14,13 @@ class LRReducer(Callback):
         self.patience = patience
         self.wait = 0
         self.best = np.Inf
-        self.monitor_op = lambda a, b: np.less(a, b - self.epsilon)
         
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
         logs['lr'] = K.get_value(self.model.optimizer.lr)
         current = logs.get(self.monitor)
         
-        if  self.monitor_op(current, self.best):
+        if  current < self.best-self.epsilon:
             self.best = current
             self.wait = 0
         else:
