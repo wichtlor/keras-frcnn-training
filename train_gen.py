@@ -18,7 +18,7 @@ from keras_frcnn import losses as losses
 
 from visualization.plots import save_plots_from_history
 from module import data_generators
-
+from module.my_callbacks import LRReducer
 
 try:
 
@@ -115,6 +115,8 @@ try:
             rpn_history = pickle.load(resume_train_file)
             classifier_history = pickle.load(resume_train_file)
             best_loss = pickle.load(resume_train_file)
+            rpn_lr_reducer = pickle.load(resume_train_file)
+            det_lr_reducer = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
@@ -126,6 +128,9 @@ try:
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
+        rpn_lr_reducer = LRReducer(monitor='val_loss', factor=0.5, patience=10, epsilon=1e-4, min_lr=0)
+        det_lr_reducer = LRReducer(monitor='val_loss', factor=0.5, patience=10, epsilon=1e-4, min_lr=0)
+        
         
     random.seed(train_seed)
     
@@ -208,10 +213,10 @@ try:
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
         if wait < patience:
 
-            rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
+            rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, callbacks=[rpn_lr_reducer], validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
 
-            det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
+            det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, callbacks=[det_lr_reducer], validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             classifier_history.append(det_hist.history)
         else:
             print('Training wurde beendet durch early stopping nach {} Epochen.'.format(len(rpn_history)+1))
@@ -246,6 +251,8 @@ try:
             pickle.dump(rpn_history, resume_train_file)
             pickle.dump(classifier_history, resume_train_file)
             pickle.dump(best_loss, resume_train_file)
+            pickle.dump(rpn_lr_reducer, resume_train_file)
+            pickle.dump(det_lr_reducer, resume_train_file)
 
 except Exception:
     print(traceback.format_exc())
