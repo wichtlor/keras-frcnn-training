@@ -133,7 +133,7 @@ try:
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
-        lr_patience = 1            #Learning rate reducer
+        lr_patience = 2            #Learning rate reducer
         lr_epsilon = 1e-4           #Learning rate reducer
         lr_reduce_factor= 0.3       #Learning rate reducer
         best_rpn_val_loss = np.Inf  #Learning rate reducer
@@ -261,7 +261,7 @@ try:
                     new_det_lr = old_lr * lr_reduce_factor
                     new_det_lr = max(new_det_lr, 0)
                     K.set_value(model_classifier.optimizer.lr, new_det_lr)
-                    print('Reduziere LearningRate vom RPN auf {}.'.format(new_det_lr))
+                    print('Reduziere LearningRate vom Detektor auf {}.'.format(new_det_lr))
                     lr_det_wait = 0
             lr_det_wait += 1
         
