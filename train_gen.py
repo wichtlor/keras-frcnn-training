@@ -115,8 +115,8 @@ try:
             rpn_history = pickle.load(resume_train_file)
             classifier_history = pickle.load(resume_train_file)
             best_loss = pickle.load(resume_train_file)
-            rpn_lr_reducer = pickle.load(resume_train_file)
-            det_lr_reducer = pickle.load(resume_train_file)
+#            rpn_lr_reducer = pickle.load(resume_train_file)
+#            det_lr_reducer = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
