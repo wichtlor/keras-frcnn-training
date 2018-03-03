@@ -1,5 +1,4 @@
 import random
-import dill
 import pickle
 import pprint
 import time
@@ -19,7 +18,7 @@ from keras_frcnn import losses as losses
 
 from visualization.plots import save_plots_from_history
 from module import data_generators
-from module.my_callbacks import LRReducer
+
 
 try:
 
@@ -116,22 +115,31 @@ try:
             rpn_history = pickle.load(resume_train_file)
             classifier_history = pickle.load(resume_train_file)
             best_loss = pickle.load(resume_train_file)
-#            rpn_lr_reducer = pickle.load(resume_train_file)
-#            det_lr_reducer = pickle.load(resume_train_file)
+            lr_patience = pickle.load(resume_train_file)
+            lr_epsilon =pickle.load(resume_train_file)
+            lr_reduce_factor = pickle.load(resume_train_file)
+            best_rpn_val_loss = pickle.load(resume_train_file)
+            lr_rpn_wait = pickle.load(resume_train_file)
+            best_det_val_loss = pickle.load(resume_train_file)
+            lr_det_wait = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
         validation_length = 300
         times_increased = 0
-        patience = 20
-        wait = 0
-        min_delta = 0.003
+        patience = 20       #early stopping
+        wait = 0            #early stopping
+        min_delta = 0.005   #early stopping
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
-    rpn_lr_reducer = LRReducer(monitor='val_loss', factor=0.5, patience=10, epsilon=1e-4, min_lr=0)
-    det_lr_reducer = LRReducer(monitor='val_loss', factor=0.5, patience=10, epsilon=1e-4, min_lr=0)
-    
+        lr_patience = 1            #Learning rate reducer
+        lr_epsilon = 1e-4           #Learning rate reducer
+        lr_reduce_factor= 0.3       #Learning rate reducer
+        best_rpn_val_loss = np.Inf  #Learning rate reducer
+        lr_rpn_wait = 0             #Learning rate reducer
+        best_det_val_loss = np.Inf  #Learning rate reducer
+        lr_det_wait = 0             #Learning rate reducer
         
     random.seed(train_seed)
     
@@ -213,10 +221,10 @@ try:
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
         if wait < patience:
-            rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, callbacks=[rpn_lr_reducer], validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
+            rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
 
-            det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, callbacks=[det_lr_reducer], validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
+            det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             classifier_history.append(det_hist.history)
         else:
             print('Training wurde beendet durch early stopping nach {} Epochen.'.format(len(rpn_history)+1))
@@ -225,9 +233,41 @@ try:
         #speichere Plots aller Losses des Modells
         save_plots_from_history(rpn_history, classifier_history, model_path, len(classes_count))
         
+        
+        curr_rpn_val_loss = rpn_hist.history['val_loss'][0]
+        curr_det_val_loss = det_hist.history['val_loss'][0]
+        
+        if curr_rpn_val_loss < best_rpn_val_loss - lr_epsilon:
+            best_rpn_val_loss = curr_rpn_val_loss
+            lr_rpn_wait = 0
+        else:
+            if lr_rpn_wait >= lr_patience:
+                old_lr = float(K.get_value(model_rpn.optimizer.lr))
+                if old_lr > 0:
+                    new_rpn_lr = old_lr * lr_reduce_factor
+                    new_rpn_lr = max(new_rpn_lr, 0)
+                    K.set_value(model_rpn.optimizer.lr, new_rpn_lr)
+                    print('Reduziere LearningRate vom RPN auf {}.'.format(new_rpn_lr))
+                    lr_rpn_wait = 0
+            lr_rpn_wait += 1
+        
+        if curr_det_val_loss < best_det_val_loss - lr_epsilon:
+            best_det_val_loss = curr_det_val_loss
+            lr_det_wait = 0
+        else:
+            if lr_det_wait >= lr_patience:
+                old_lr = float(K.get_value(model_classifier.optimizer.lr))
+                if old_lr > 0:
+                    new_det_lr = old_lr * lr_reduce_factor
+                    new_det_lr = max(new_det_lr, 0)
+                    K.set_value(model_classifier.optimizer.lr, new_det_lr)
+                    print('Reduziere LearningRate vom RPN auf {}.'.format(new_det_lr))
+                    lr_det_wait = 0
+            lr_det_wait += 1
+        
         #Wenn Validationloss sich verbessert, dann speichere neues bestes Modell
-        curr_val_loss = rpn_hist.history['val_loss'][0] + det_hist.history['val_loss'][0]
-        if curr_val_loss < best_loss and best_loss-curr_val_loss > min_delta:
+        curr_val_loss = curr_rpn_val_loss + curr_det_val_loss
+        if curr_val_loss < best_loss - min_delta:
             wait = 0
             print('Total validation loss decreased from {} to {}, saving new best weights'.format(best_loss,curr_val_loss))
             best_loss = curr_val_loss
@@ -251,8 +291,14 @@ try:
             pickle.dump(rpn_history, resume_train_file)
             pickle.dump(classifier_history, resume_train_file)
             pickle.dump(best_loss, resume_train_file)
-            pickle.dump(rpn_lr_reducer, resume_train_file)
-            pickle.dump(det_lr_reducer, resume_train_file)
+            pickle.dump(lr_patience, resume_train_file)
+            pickle.dump(lr_epsilon, resume_train_file)
+            pickle.dump(lr_reduce_factor, resume_train_file)
+            pickle.dump(best_rpn_val_loss, resume_train_file)
+            pickle.dump(lr_rpn_wait, resume_train_file)
+            pickle.dump(best_det_val_loss, resume_train_file)
+            pickle.dump(lr_det_wait, resume_train_file)
+
 
 except Exception:
     print(traceback.format_exc())
