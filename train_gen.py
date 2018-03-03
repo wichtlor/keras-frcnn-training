@@ -125,7 +125,7 @@ try:
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
-        validation_length = 1
+        validation_length = 300
         times_increased = 0
         patience = 20       #early stopping
         wait = 0            #early stopping
@@ -133,9 +133,9 @@ try:
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
-        lr_patience = 2            #Learning rate reducer
+        lr_patience = 10            #Learning rate reducer
         lr_epsilon = 1e-4           #Learning rate reducer
-        lr_reduce_factor= 0.3       #Learning rate reducer
+        lr_reduce_factor= 0.4       #Learning rate reducer
         best_rpn_val_loss = np.Inf  #Learning rate reducer
         lr_rpn_wait = 0             #Learning rate reducer
         best_det_val_loss = np.Inf  #Learning rate reducer
@@ -205,7 +205,7 @@ try:
     data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     
     
-    epoch_length = 1
+    epoch_length = 1000
     num_epochs = int(options.num_epochs)
 
     for epoch_num in range(num_epochs):
@@ -236,7 +236,7 @@ try:
         
         curr_rpn_val_loss = rpn_hist.history['val_loss'][0]
         curr_det_val_loss = det_hist.history['val_loss'][0]
-        
+        #Reduzier Learningrate vom model_rpn wenn der val_loss sich um lr_patience Epochen nicht signifikant gebessert hat
         if curr_rpn_val_loss < best_rpn_val_loss - lr_epsilon:
             best_rpn_val_loss = curr_rpn_val_loss
             lr_rpn_wait = 0
@@ -250,7 +250,8 @@ try:
                     print('Reduziere LearningRate vom RPN auf {}.'.format(new_rpn_lr))
                     lr_rpn_wait = 0
             lr_rpn_wait += 1
-        
+            
+        #Reduzier Learningrate vom model_rpn wenn der val_loss sich um lr_patience Epochen nicht signifikant gebessert hat
         if curr_det_val_loss < best_det_val_loss - lr_epsilon:
             best_det_val_loss = curr_det_val_loss
             lr_det_wait = 0
