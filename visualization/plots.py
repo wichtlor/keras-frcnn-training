@@ -54,5 +54,7 @@ def save_plots_from_history(rpn_hist, cls_hist, path, num_classes):
     plot_loss(losses[:epoch, 10], losses[:epoch, 11], 'rpn_loss', path)
     plot_loss(losses[:epoch, 12], losses[:epoch, 13], 'detektor_loss', path)
     plot_loss(losses[:epoch, 10]+losses[:epoch, 12], losses[:epoch, 11]+losses[:epoch, 13], 'total_loss', path)
-    curr_val_loss = losses[epoch-1, 11]+losses[epoch-1, 13]
-    return curr_val_loss
+#==============================================================================
+#     curr_val_loss = losses[epoch-1, 11]+losses[epoch-1, 13]
+#     return curr_val_loss
+#==============================================================================

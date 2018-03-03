@@ -207,6 +207,8 @@ try:
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
         if wait < patience:
+            rpn_history[epoch_num]['val_loss'][0]
+
             rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
 
@@ -217,9 +219,10 @@ try:
             break
 
         #speichere Plots aller Losses des Modells
-        curr_val_loss = save_plots_from_history(rpn_history, classifier_history, model_path, len(classes_count))
+        save_plots_from_history(rpn_history, classifier_history, model_path, len(classes_count))
         
         #Wenn Validationloss sich verbessert, dann speichere neues bestes Modell
+        curr_val_loss = rpn_hist.history['val_loss'][0] + det_hist.history['val_loss'][0]
         if curr_val_loss < best_loss and best_loss-curr_val_loss > min_delta:
             wait = 0
             print('Total validation loss decreased from {} to {}, saving new best weights'.format(best_loss,curr_val_loss))
