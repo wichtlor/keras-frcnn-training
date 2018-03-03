@@ -118,7 +118,7 @@ try:
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
-        validation_length = 1
+        validation_length = 300
         times_increased = 0
         patience = 20
         wait = 0
@@ -191,7 +191,7 @@ try:
     data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     
     
-    epoch_length = 2
+    epoch_length = 1000
     num_epochs = int(options.num_epochs)
 
     for epoch_num in range(num_epochs):
