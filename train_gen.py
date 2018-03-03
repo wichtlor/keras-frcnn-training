@@ -128,8 +128,8 @@ try:
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
-        rpn_lr_reducer = LRReducer(monitor='val_loss', factor=0.5, patience=10, epsilon=1e-4, min_lr=0)
-        det_lr_reducer = LRReducer(monitor='val_loss', factor=0.5, patience=10, epsilon=1e-4, min_lr=0)
+    rpn_lr_reducer = LRReducer(monitor='val_loss', factor=0.5, patience=10, epsilon=1e-4, min_lr=0)
+    det_lr_reducer = LRReducer(monitor='val_loss', factor=0.5, patience=10, epsilon=1e-4, min_lr=0)
         
         
     random.seed(train_seed)
@@ -212,7 +212,6 @@ try:
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
         if wait < patience:
-
             rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, callbacks=[rpn_lr_reducer], validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
 
