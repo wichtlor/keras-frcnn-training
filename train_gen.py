@@ -65,12 +65,12 @@ try:
     if options.network == 'mynet_small':
         from netze import mynet_small as nn
         C.network = 'mynet_small'
-    elif options.network == 'mynet_small':
+    elif options.network == 'vgg16':
         from netze import vgg16 as nn
         C.network = 'vgg16'
     else:
-    	print('Not a valid model')
-    	raise ValueError
+        print('Not a valid model')
+        raise ValueError
     
 
      
