@@ -120,7 +120,7 @@ try:
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
         validation_length = 1
         times_increased = 0
-        patience = 2
+        patience = 20
         wait = 0
         min_delta = 0.003
         rpn_history = []
