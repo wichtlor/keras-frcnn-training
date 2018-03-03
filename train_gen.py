@@ -160,10 +160,8 @@ try:
     model_rpn = Model(img_input, rpn[:2])
     # this is a model that holds both the RPN and the classifier, used to load/save weights for the models
     model_all = Model([img_input, roi_input], rpn + classifier)
-    
 
 
-    
     # check if weight path was passed via command line
     if options.input_weight_path:
         C.base_net_weights = options.input_weight_path
@@ -193,7 +191,7 @@ try:
     data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     
     
-    epoch_length = 1000
+    epoch_length = 2
     num_epochs = int(options.num_epochs)
 
     for epoch_num in range(num_epochs):
