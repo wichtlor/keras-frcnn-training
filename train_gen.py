@@ -11,8 +11,6 @@ from keras import backend as K
 from keras.models import Model
 from keras.layers import Input
 from keras.optimizers import SGD, Adam
-from keras.utils import generic_utils
-from keras.callbacks import EarlyStopping
 
 from keras_frcnn import config
 from keras_frcnn.pascal_voc_parser import get_data
@@ -20,7 +18,7 @@ from keras_frcnn import losses as losses
 
 from visualization.plots import save_plots_from_history
 from module import data_generators
-from module.earlystopping import MyEarlyStopping
+
 
 try:
 
@@ -111,22 +109,26 @@ try:
     if options.resume_train:
         with open(resume_training_path, 'rb') as resume_train_file:
             train_seed = pickle.load(resume_train_file)
-            rpn_es = pickle.load(resume_train_file)
-            det_es = pickle.load(resume_train_file)
-            rpn_stopped_epoch = pickle.load(resume_train_file)
-            det_stopped_epoch = pickle.load(resume_train_file)
-            last_improvement = pickle.load(resume_train_file)
-            incr_valsetsize = pickle.load(resume_train_file)
+            incr_valsteps_after_epochs = pickle.load(resume_train_file)
             validation_length = pickle.load(resume_train_file)
+            times_increased = pickle.load(resume_train_file)
+            patience = pickle.load(resume_train_file)
+            wait = pickle.load(resume_train_file)
+            min_delta = pickle.load(resume_train_file)
+            rpn_history = pickle.load(resume_train_file)
+            classifier_history = pickle.load(resume_train_file)
+            best_loss = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
-        rpn_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20) #todo: bei neugestartetem Training resettet patience
-        det_es = MyEarlyStopping(monitor='val_loss', min_delta=0, patience=20)
-        rpn_stopped_epoch = 0
-        det_stopped_epoch = 0
-        last_improvement = 0
-        incr_valsetsize = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
-        validation_length = 300
+        incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
+        validation_length = 1
+        times_increased = 0
+        patience = 2
+        wait = 0
+        min_delta = 0.003
+        rpn_history = []
+        classifier_history = []
+        best_loss = np.Inf
         
     random.seed(train_seed)
     
@@ -162,9 +164,8 @@ try:
     # this is a model that holds both the RPN and the classifier, used to load/save weights for the models
     model_all = Model([img_input, roi_input], rpn + classifier)
     
-    best_loss = np.Inf
-    rpn_history = []
-    classifier_history = []
+
+
     
     # check if weight path was passed via command line
     if options.input_weight_path:
@@ -175,14 +176,6 @@ try:
             model_classifier.load_weights(C.base_net_weights, by_name=True)
         except:
             print('Model weights konnten nicht geladen werden.')
-
-        if 'losses.pickle' in os.listdir(options.input_weight_path.rsplit(os.sep,1)[0]):
-            print('Losses von vorangegangenem Training werden geladen.')
-            pickled_losses_path = options.input_weight_path.rsplit(os.sep,1)[0] + os.sep + 'losses.pickle'
-            with open(pickled_losses_path, 'rb') as read_loss:
-                rpn_history = pickle.load(read_loss)
-                classifier_history = pickle.load(read_loss)
-                best_loss = pickle.load(read_loss)
 
     #Modelle kompilieren
     model_rpn.compile(optimizer=Adam(lr=0.00001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
@@ -204,62 +197,41 @@ try:
     
     
     epoch_length = 1000
-
     num_epochs = int(options.num_epochs)
-    
-
-    train_losses = np.zeros((epoch_length, 5))
-    epoch_mean_losses = np.zeros((num_epochs, 10))
-    
 
     for epoch_num in range(num_epochs):
         print('Trainings Epoche {}/{}'.format(len(rpn_history)+1,num_epochs))
         start_time = time.time()
         
-        #Um die Trainingszeit gering zu halten wird mit einem kleinen Validationset begonnen das vergroessert wird
-        #falls das Training anfaengt zu stagnieren um dann Fluktuationen im Validationsfehler zu reduzieren
-        if last_improvement >= incr_valsetsize:
-            last_improvement = 0
+        #Um die Trainingszeit gering zu halten wird mit mit wenigen Validationsteps begonnen und erhoeht wenn
+        # das Training anfaengt zu stagnieren um dann Fluktuationen im Validationsfehler zu reduzieren.
+        if wait%incr_valsteps_after_epochs==0 and wait/incr_valsteps_after_epochs==times_increased+1:
+            times_increased += 1
             validation_length = min(validation_length*2, len(val_imgs))
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang die EarlyStopping callbacks das Training nicht beendet haben
-        if not rpn_es.stop_train:
-            rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, callbacks=[rpn_es], verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
-            rpn_history.append(rpn_hist.history)
-            
-            if rpn_stopped_epoch==0 and rpn_es.stop_train:
-                rpn_stopped_epoch = epoch_num
-        else:
+        if wait < patience:
+            rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             rpn_history.append(rpn_hist.history)
 
-        if not det_es.stop_train:
-            det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, callbacks=[det_es], verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
+            det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
             classifier_history.append(det_hist.history)
-            
-            if det_stopped_epoch==0 and det_es.stop_train:
-                det_stopped_epoch = epoch_num
         else:
-            classifier_history.append(det_hist.history)
+            print('Training wurde beendet durch early stopping nach {} Epochen.'.format(len(rpn_history)+1))
+            break
 
-        
-        #pickle losses um auch nach abgebrochenem und weitergefuehrtem Training vollstaendige Lossplots zu bekommen
-        with open(os.path.join(model_path, 'losses.pickle'), 'wb') as pickle_loss:
-            pickle.dump(rpn_history, pickle_loss)
-            pickle.dump(classifier_history, pickle_loss)
-            pickle.dump(best_loss, pickle_loss)
-            
         #speichere Plots aller Losses des Modells
         curr_val_loss = save_plots_from_history(rpn_history, classifier_history, model_path, len(classes_count))
         
-        #Wenn Validationloss sich verbessert, dann speichere weights
-        if curr_val_loss < best_loss:
+        #Wenn Validationloss sich verbessert, dann speichere neues bestes Modell
+        if curr_val_loss < best_loss and best_loss-curr_val_loss > min_delta:
+            wait = 0
             print('Total validation loss decreased from {} to {}, saving new best weights'.format(best_loss,curr_val_loss))
             best_loss = curr_val_loss
             model_all.save_weights(os.path.join(model_path, 'best_' + model_name))
-            last_improvement = 0
         else:
-            last_improvement += 1
+            wait += 1
         model_all.save_weights(os.path.join(model_path, model_name))
         
         print('Epoch took: {}'.format(time.time() - start_time))
@@ -268,20 +240,15 @@ try:
         #speichere aktuellen Zustand einiger Variablen um bei Abbruch und fortgefuehrtem Training den Zustand wiederherstellen zu koennen        
         with open(resume_training_path, 'wb') as resume_train_file:
             pickle.dump(train_seed, resume_train_file)
-            pickle.dump(rpn_es, resume_train_file)
-            pickle.dump(det_es, resume_train_file)
-            pickle.dump(rpn_stopped_epoch, resume_train_file)
-            pickle.dump(det_stopped_epoch, resume_train_file)
-            pickle.dump(last_improvement, resume_train_file)
-            pickle.dump(incr_valsetsize, resume_train_file)
+            pickle.dump(incr_valsteps_after_epochs, resume_train_file)
             pickle.dump(validation_length, resume_train_file)
+            pickle.dump(times_increased, resume_train_file)
+            pickle.dump(patience, resume_train_file)
+            pickle.dump(wait, resume_train_file)
+            pickle.dump(min_delta, resume_train_file)
             pickle.dump(rpn_history, resume_train_file)
             pickle.dump(classifier_history, resume_train_file)
             pickle.dump(best_loss, resume_train_file)
-        
-        if rpn_es.stop_train and det_es.stop_train:
-            print('Training wurde beendet durch early stopping nach {} RPN Epochen und {} Detektor Epochen.'.format(rpn_stopped_epoch,det_stopped_epoch))
-            break
-        
+
 except Exception:
     print(traceback.format_exc())
