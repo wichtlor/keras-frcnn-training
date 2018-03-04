@@ -346,64 +346,62 @@ class RPNSequence(Sequence):
 
     def __getitem__(self,idx):
 
-        print('yaaay RPN')
+        
         if self.mode == 'train':
             np.random.shuffle(self.all_img_data)
 
         img_data = self.all_img_data[idx*self.batch_size:(idx+1)*self.batch_size]
-        try:
-            #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
 
-            # read in image, and optionally add augmentation
+        #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
 
-            if self.mode == 'train':
-                img_data_aug, x_img = data_augment.augment(img_data, C, augment=True)
-            else:
-                img_data_aug, x_img = data_augment.augment(img_data, C, augment=False)
+        # read in image, and optionally add augmentation
 
-            (width, height) = (img_data_aug['width'], img_data_aug['height'])
-            (rows, cols, _) = x_img.shape
+        if self.mode == 'train':
+            img_data_aug, x_img = data_augment.augment(img_data, C, augment=True)
+        else:
+            img_data_aug, x_img = data_augment.augment(img_data, C, augment=False)
 
-            assert cols == width
-            assert rows == height
+        (width, height) = (img_data_aug['width'], img_data_aug['height'])
+        (rows, cols, _) = x_img.shape
 
-            # get image dimensions for resizing
-            (resized_width, resized_height) = get_new_img_size(width, height, C.im_size)
+        assert cols == width
+        assert rows == height
 
-            # resize the image so that smalles side is length = 600px
-            x_img = cv2.resize(x_img, (resized_width, resized_height), interpolation=cv2.INTER_CUBIC)
+        # get image dimensions for resizing
+        (resized_width, resized_height) = get_new_img_size(width, height, C.im_size)
 
-
-            y_rpn_cls, y_rpn_regr = calc_rpn(self.C, img_data_aug, width, height, resized_width, resized_height, self.img_length_calc_function)
+        # resize the image so that smalles side is length = 600px
+        x_img = cv2.resize(x_img, (resized_width, resized_height), interpolation=cv2.INTER_CUBIC)
 
 
-            # Zero-center by mean pixel, and preprocess image
+        y_rpn_cls, y_rpn_regr = calc_rpn(self.C, img_data_aug, width, height, resized_width, resized_height, self.img_length_calc_function)
 
-            x_img = x_img[:,:, (2, 1, 0)]  # BGR -> RGB
-            x_img = x_img.astype(np.float32)
-            x_img[:, :, 0] -= C.img_channel_mean[0]
-            x_img[:, :, 1] -= C.img_channel_mean[1]
-            x_img[:, :, 2] -= C.img_channel_mean[2]
-            x_img /= C.img_scaling_factor
 
-            x_img = np.transpose(x_img, (2, 0, 1))
-            x_img = np.expand_dims(x_img, axis=0)
+        # Zero-center by mean pixel, and preprocess image
 
-            y_rpn_regr[:, y_rpn_regr.shape[1]//2:, :, :] *= C.std_scaling
+        x_img = x_img[:,:, (2, 1, 0)]  # BGR -> RGB
+        x_img = x_img.astype(np.float32)
+        x_img[:, :, 0] -= C.img_channel_mean[0]
+        x_img[:, :, 1] -= C.img_channel_mean[1]
+        x_img[:, :, 2] -= C.img_channel_mean[2]
+        x_img /= C.img_scaling_factor
 
-            if self.backend == 'tf':
-                x_img = np.transpose(x_img, (0, 2, 3, 1))
-                y_rpn_cls = np.transpose(y_rpn_cls, (0, 2, 3, 1))
-                y_rpn_regr = np.transpose(y_rpn_regr, (0, 2, 3, 1))
+        x_img = np.transpose(x_img, (2, 0, 1))
+        x_img = np.expand_dims(x_img, axis=0)
 
-            if self.mode == 'pred':
-                return np.copy(x_img)
-            else:
-                return np.copy(x_img), [np.copy(y_rpn_cls), np.copy(y_rpn_regr)], img_data_aug
+        y_rpn_regr[:, y_rpn_regr.shape[1]//2:, :, :] *= C.std_scaling
 
-        except Exception as e:
-            print(e)
-            
+        if self.backend == 'tf':
+            x_img = np.transpose(x_img, (0, 2, 3, 1))
+            y_rpn_cls = np.transpose(y_rpn_cls, (0, 2, 3, 1))
+            y_rpn_regr = np.transpose(y_rpn_regr, (0, 2, 3, 1))
+
+        if self.mode == 'pred':
+            return np.copy(x_img)
+        else:
+            print('yaaay RPN')
+            return np.copy(x_img), [np.copy(y_rpn_cls), np.copy(y_rpn_regr)], img_data_aug
+
 
 class DetSequence(Sequence):
     def __init__(self, all_img_data, model_rpn, graph, class_count, C, img_length_calc_function, backend, mode='train'):
