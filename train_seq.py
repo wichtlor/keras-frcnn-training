@@ -339,7 +339,7 @@ class RPNSequence(Sequence):
         self.img_length_calc_function = img_length_calc_function
         self.backend = backend
         self.mode = mode
-        self.batchsize = 1        
+        self.batch_size = 1        
         
     def __len__(self):
         return len(self.all_img_data)
@@ -350,7 +350,7 @@ class RPNSequence(Sequence):
         if self.mode == 'train':
             np.random.shuffle(self.all_img_data)
 
-        img_data = self.all_img_data[idx*self.batchsize:(idx+1)*self.batch_size]
+        img_data = self.all_img_data[idx*self.batch_size:(idx+1)*self.batch_size]
         try:
             #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
 
@@ -413,7 +413,7 @@ class DetSequence(Sequence):
         self.img_length_calc_function = img_length_calc_function
         self.backend = backend
         self.mode = mode
-        self.batchsize = 1
+        self.batch_size = 1
         self.model_rpn = model_rpn
         self.graph = graph
 
@@ -427,7 +427,7 @@ class DetSequence(Sequence):
         if self.mode == 'train':
             np.random.shuffle(self.all_img_data)
             
-        img_data = self.all_img_data[idx*self.batchsize:(idx+1)*self.batch_size]
+        img_data = self.all_img_data[idx*self.batch_size:(idx+1)*self.batch_size]
         try:
             #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
 
