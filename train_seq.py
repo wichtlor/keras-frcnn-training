@@ -346,7 +346,7 @@ class RPNSequence(Sequence):
 
     def __getitem__(self,idx):
 
-
+        print('yaaay RPN')
         if self.mode == 'train':
             np.random.shuffle(self.all_img_data)
 
@@ -421,6 +421,7 @@ class DetSequence(Sequence):
         return len(self.all_img_data)
 
     def __getitem__(self,idx):
+        print('yaaay Detektor')
         with graph.as_default():
             model_rpn._make_predict_function()
             
