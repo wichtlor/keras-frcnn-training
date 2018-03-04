@@ -399,7 +399,7 @@ class RPNSequence(Sequence):
         if self.mode == 'pred':
             return np.copy(x_img)
         else:
-            
+            print('yaaay RPN2')
             return np.copy(x_img), [np.copy(y_rpn_cls), np.copy(y_rpn_regr)], img_data_aug
 
 
