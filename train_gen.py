@@ -65,6 +65,9 @@ try:
     if options.network == 'mynet_small':
         from netze import mynet_small as nn
         C.network = 'mynet_small'
+    if options.network == 'mynet_medium':
+        from netze import mynet_medium as nn
+        C.network = 'mynet_medium'
     elif options.network == 'vgg16':
         from netze import vgg16 as nn
         C.network = 'vgg16'
