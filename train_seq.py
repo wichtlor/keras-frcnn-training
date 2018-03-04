@@ -330,7 +330,7 @@ def select_rois_for_detection(Y1, C):
             sel_samples = random.choice(pos_samples) 
     return sel_samples
 
-@threadsafe_generator
+
 class RPNSequence(Sequence):
     def __init__(self, all_img_data, class_count, C, img_length_calc_function, backend, mode='train'):
         self.all_img_data = all_img_data
@@ -404,7 +404,7 @@ class RPNSequence(Sequence):
         except Exception as e:
             print(e)
             
-@threadsafe_generator
+
 class DetSequence(Sequence):
     def __init__(self, all_img_data, model_rpn, graph, class_count, C, img_length_calc_function, backend, mode='train'):
         self.all_img_data = all_img_data
@@ -424,72 +424,72 @@ class DetSequence(Sequence):
         with graph.as_default():
             model_rpn._make_predict_function()
             
+        if self.mode == 'train':
+            np.random.shuffle(self.all_img_data)
+            
+        img_data = self.all_img_data[idx*self.batchsize:(idx+1)*self.batch_size]
+        try:
+            #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
+
+
+            # read in image, and optionally add augmentation
             if self.mode == 'train':
-                np.random.shuffle(self.all_img_data)
-                
-            img_data = self.all_img_data[idx*self.batchsize:(idx+1)*self.batch_size]
-            try:
-                #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
+                img_data_aug, x_img = data_augment.augment(img_data, C, augment=True)
+            else:
+                img_data_aug, x_img = data_augment.augment(img_data, C, augment=False)
 
+            (width, height) = (img_data_aug['width'], img_data_aug['height'])
+            (rows, cols, _) = x_img.shape
 
-                # read in image, and optionally add augmentation
-                if self.mode == 'train':
-                    img_data_aug, x_img = data_augment.augment(img_data, C, augment=True)
-                else:
-                    img_data_aug, x_img = data_augment.augment(img_data, C, augment=False)
+            
+            assert cols == width
+            assert rows == height
+            
+            # get image dimensions for resizing
+            (resized_width, resized_height) = get_new_img_size(width, height, C.im_size)
+            # resize the image so that smalles side is length = 600px
+            x_img = cv2.resize(x_img, (resized_width, resized_height), interpolation=cv2.INTER_CUBIC)
 
-                (width, height) = (img_data_aug['width'], img_data_aug['height'])
-                (rows, cols, _) = x_img.shape
+            # Zero-center by mean pixel, and preprocess image
 
-                
-                assert cols == width
-                assert rows == height
-                
-                # get image dimensions for resizing
-                (resized_width, resized_height) = get_new_img_size(width, height, C.im_size)
-                # resize the image so that smalles side is length = 600px
-                x_img = cv2.resize(x_img, (resized_width, resized_height), interpolation=cv2.INTER_CUBIC)
+            x_img = x_img[:,:, (2, 1, 0)]  # BGR -> RGB
+            x_img = x_img.astype(np.float32)
+            x_img[:, :, 0] -= C.img_channel_mean[0]
+            x_img[:, :, 1] -= C.img_channel_mean[1]
+            x_img[:, :, 2] -= C.img_channel_mean[2]
+            x_img /= C.img_scaling_factor
 
-                # Zero-center by mean pixel, and preprocess image
+            x_img = np.transpose(x_img, (2, 0, 1))
+            x_img = np.expand_dims(x_img, axis=0)
+            
+            if self.backend == 'tf':
+                x_img = np.transpose(x_img, (0, 2, 3, 1))
 
-                x_img = x_img[:,:, (2, 1, 0)]  # BGR -> RGB
-                x_img = x_img.astype(np.float32)
-                x_img[:, :, 0] -= C.img_channel_mean[0]
-                x_img[:, :, 1] -= C.img_channel_mean[1]
-                x_img[:, :, 2] -= C.img_channel_mean[2]
-                x_img /= C.img_scaling_factor
+            #rpn predictions
+            with graph.as_default():
+                P_rpn = model_rpn.predict(x_img)
 
-                x_img = np.transpose(x_img, (2, 0, 1))
-                x_img = np.expand_dims(x_img, axis=0)
-                
-                if self.backend == 'tf':
-                    x_img = np.transpose(x_img, (0, 2, 3, 1))
+            #rpn predictions umformen zu RoI
+            R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
 
-                #rpn predictions
-                with graph.as_default():
-                    P_rpn = model_rpn.predict(x_img)
+            #X2: RoIs mit Koordinaten (x1, y1, w, h)
+            #Y1: Ground truth Klassenlabel der RoIs [0,0,...,0,1,0,0]. Array mit .shape (1, num_rois, num_classes)
+            #Y2: Ground truth regression targets der RoIs ohne die Background Klasse:
+            #    y_class_regr_label und y_class_regr_coords in einem Array mit .shape = (1, num_rois, (4*num_classes-1)+(4*num_classes-1))
+            #IouS: for debugging only
+            # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
+            X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data_aug, C, C.class_mapping)
 
-                #rpn predictions umformen zu RoI
-                R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
+            #wenn keine RoI gefunden wurde
+            if X2 is None:
+                return None
+            
+            selected_rois_train = select_rois_for_detection(Y1, C)
 
-                #X2: RoIs mit Koordinaten (x1, y1, w, h)
-                #Y1: Ground truth Klassenlabel der RoIs [0,0,...,0,1,0,0]. Array mit .shape (1, num_rois, num_classes)
-                #Y2: Ground truth regression targets der RoIs ohne die Background Klasse:
-                #    y_class_regr_label und y_class_regr_coords in einem Array mit .shape = (1, num_rois, (4*num_classes-1)+(4*num_classes-1))
-                #IouS: for debugging only
-                # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
-                X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data_aug, C, C.class_mapping)
-
-                #wenn keine RoI gefunden wurde
-                if X2 is None:
-                    return None
-                
-                selected_rois_train = select_rois_for_detection(Y1, C)
-
-                return [x_img, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]]
-                
-            except Exception as e:
-                print(e)
+            return [x_img, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]]
+            
+        except Exception as e:
+            print(e)
 
                 
                 
