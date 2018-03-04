@@ -345,7 +345,7 @@ class RPNSequence(Sequence):
         return len(self.all_img_data)
 
     def __getitem__(self,idx):
-
+        print('yaaay RPN')
         
         if self.mode == 'train':
             np.random.shuffle(self.all_img_data)
@@ -399,7 +399,7 @@ class RPNSequence(Sequence):
         if self.mode == 'pred':
             return np.copy(x_img)
         else:
-            print('yaaay RPN')
+            
             return np.copy(x_img), [np.copy(y_rpn_cls), np.copy(y_rpn_regr)], img_data_aug
 
 
