@@ -330,7 +330,7 @@ def select_rois_for_detection(Y1, C):
             sel_samples = random.choice(pos_samples) 
     return sel_samples
 
-
+@threadsafe_generator
 class RPNSequence(Sequence):
     def __init__(self, all_img_data, class_count, C, img_length_calc_function, backend, mode='train'):
         self.all_img_data = all_img_data
@@ -373,10 +373,9 @@ class RPNSequence(Sequence):
             # resize the image so that smalles side is length = 600px
             x_img = cv2.resize(x_img, (resized_width, resized_height), interpolation=cv2.INTER_CUBIC)
 
-            try:
-                y_rpn_cls, y_rpn_regr = calc_rpn(self.C, img_data_aug, width, height, resized_width, resized_height, self.img_length_calc_function)
-            except:
-                continue
+
+            y_rpn_cls, y_rpn_regr = calc_rpn(self.C, img_data_aug, width, height, resized_width, resized_height, self.img_length_calc_function)
+
 
             # Zero-center by mean pixel, and preprocess image
 
@@ -404,17 +403,96 @@ class RPNSequence(Sequence):
 
         except Exception as e:
             print(e)
-            continue
+            
+@threadsafe_generator
+class DetSequence(Sequence):
+    def __init__(self, all_img_data, model_rpn, graph, class_count, C, img_length_calc_function, backend, mode='train'):
+        self.all_img_data = all_img_data
+        self.class_count = class_count
+        self.C = C
+        self.img_length_calc_function = img_length_calc_function
+        self.backend = backend
+        self.mode = mode
+        self.batchsize = 1
+        self.model_rpn = model_rpn
+        self.graph = graph
 
-        
-    def on_epoch_end(self):
-        """Method called at the end of every epoch.
-        """
-        print('\nEpoch end: ' + str(self.epoch_counter) + ' counter: ' + str(self.counter))
-        self.epoch_counter +=1
+    def __len__(self):
+        return len(self.all_img_data)
+
+    def __getitem__(self,idx):
+        with graph.as_default():
+            model_rpn._make_predict_function()
+            
+            if self.mode == 'train':
+                np.random.shuffle(self.all_img_data)
+                
+            img_data = self.all_img_data[idx*self.batchsize:(idx+1)*self.batch_size]
+            try:
+                #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
 
 
+                # read in image, and optionally add augmentation
+                if self.mode == 'train':
+                    img_data_aug, x_img = data_augment.augment(img_data, C, augment=True)
+                else:
+                    img_data_aug, x_img = data_augment.augment(img_data, C, augment=False)
 
+                (width, height) = (img_data_aug['width'], img_data_aug['height'])
+                (rows, cols, _) = x_img.shape
+
+                
+                assert cols == width
+                assert rows == height
+                
+                # get image dimensions for resizing
+                (resized_width, resized_height) = get_new_img_size(width, height, C.im_size)
+                # resize the image so that smalles side is length = 600px
+                x_img = cv2.resize(x_img, (resized_width, resized_height), interpolation=cv2.INTER_CUBIC)
+
+                # Zero-center by mean pixel, and preprocess image
+
+                x_img = x_img[:,:, (2, 1, 0)]  # BGR -> RGB
+                x_img = x_img.astype(np.float32)
+                x_img[:, :, 0] -= C.img_channel_mean[0]
+                x_img[:, :, 1] -= C.img_channel_mean[1]
+                x_img[:, :, 2] -= C.img_channel_mean[2]
+                x_img /= C.img_scaling_factor
+
+                x_img = np.transpose(x_img, (2, 0, 1))
+                x_img = np.expand_dims(x_img, axis=0)
+                
+                if self.backend == 'tf':
+                    x_img = np.transpose(x_img, (0, 2, 3, 1))
+
+                #rpn predictions
+                with graph.as_default():
+                    P_rpn = model_rpn.predict(x_img)
+
+                #rpn predictions umformen zu RoI
+                R = roi_helpers.rpn_to_roi(P_rpn[0], P_rpn[1], C, K.image_dim_ordering(), use_regr=True, overlap_thresh=0.7, max_boxes=300)
+
+                #X2: RoIs mit Koordinaten (x1, y1, w, h)
+                #Y1: Ground truth Klassenlabel der RoIs [0,0,...,0,1,0,0]. Array mit .shape (1, num_rois, num_classes)
+                #Y2: Ground truth regression targets der RoIs ohne die Background Klasse:
+                #    y_class_regr_label und y_class_regr_coords in einem Array mit .shape = (1, num_rois, (4*num_classes-1)+(4*num_classes-1))
+                #IouS: for debugging only
+                # note: calc_iou converts from (x1,y1,x2,y2) to (x,y,w,h) format
+                X2, Y1, Y2, IouS = roi_helpers.calc_iou(R, img_data_aug, C, C.class_mapping)
+
+                #wenn keine RoI gefunden wurde
+                if X2 is None:
+                    return None
+                
+                selected_rois_train = select_rois_for_detection(Y1, C)
+
+                return [x_img, X2[:, selected_rois_train, :]], [Y1[:, selected_rois_train, :], Y2[:, selected_rois_train, :]]
+                
+            except Exception as e:
+                print(e)
+
+                
+                
 try:
 
     
@@ -595,9 +673,9 @@ try:
     
     #
     data_gen_train_rpn = RPNSequence(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-    data_gen_val_rpn = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
-    data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
-    data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+    data_gen_val_rpn = RPNSequence(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
+    data_gen_cls_train = DetSequence(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
+    data_gen_cls_val = DetSequence(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     
     
     epoch_length = 1000
@@ -616,10 +694,10 @@ try:
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
         if wait < patience:
-            rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=False, workers=2)
+            rpn_hist = model_rpn.fit_generator(generator=data_gen_train_rpn, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_val_rpn, validation_steps=validation_length, use_multiprocessing=True, workers=4)
             rpn_history.append(rpn_hist.history)
 
-            det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=False, workers=2)
+            det_hist = model_classifier.fit_generator(generator=data_gen_cls_train, steps_per_epoch=epoch_length, epochs=1, verbose=1, validation_data=data_gen_cls_val, validation_steps=validation_length, use_multiprocessing=True, workers=4)
             classifier_history.append(det_hist.history)
         else:
             print('Training wurde beendet durch early stopping nach {} Epochen.'.format(len(rpn_history)+1))
