@@ -114,7 +114,7 @@ parser.add_option("-n", "--num_rois", type="int", dest="num_rois",
 parser.add_option("--config_filename", dest="config_filename", help=
                 "Location to read the metadata related to the training (generated when training).",
                 default="config.pickle")
-parser.add_option("--network", dest="network", help="Base network to use.", default='vgg')
+parser.add_option("--network", dest="network", help="Base network to use.", default='vgg16')
 parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
 
 (options, args) = parser.parse_args()
@@ -127,23 +127,26 @@ with open(config_output_filename, 'rb') as f_in:
     C = pickle.load(f_in)
     
 C.model_path = options.input_weight_path
-num_features=512
-if options.network == 'vgg':
-    C.network = 'vgg'
-    from keras_frcnn import vgg as nn
-    num_features = 512
-elif options.network == 'resnet50':
-    from keras_frcnn import resnet as nn
-    C.network = 'resnet50'
-    num_features = 1024
-elif options.network == 'mynet_small':
-    from netze import mynet_small as nn
-    C.network = 'mynet_small'
+
+    
+if options.network == 'vgg16_small':
+    from netze import vgg16_small as nn
+    C.network = 'vgg16_small'
     num_features = 192
+elif options.network == 'vgg16_medium':
+    from netze import vgg16_medium as nn
+    C.network = 'vgg16_medium'
+    num_features = 320
+elif options.network == 'vgg16':
+    from netze import vgg16 as nn
+    C.network = 'vgg16'
+    num_features = 512
 else:
     print('Not a valid model')
     raise ValueError
     
+
+
 # turn off any data augmentation at test time
 C.use_horizontal_flips = False
 C.use_vertical_flips = False

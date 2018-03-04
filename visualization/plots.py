@@ -14,6 +14,21 @@ def plot_loss(train_loss, val_loss, loss_name, path):
     fig.figure.savefig(path + '{}.png'.format(loss_name))
     plt.close()
 
+
+def plot_rpn_det_loss(train_rpn_loss, val_rpn_loss, train_det_loss, val_det_loss, loss_name, path):
+    fig = plt.subplot()
+    fig.plot(train_rpn_loss, label='train_rpn')
+    fig.plot(val_rpn_loss, label='val_rpn')
+    fig.plot(train_det_loss, label='train_rpn')
+    fig.plot(val_det_loss, label='val_rpn')
+    fig.set(xlabel='epoch', ylabel='loss', title=loss_name)
+    fig.set_ylim(0)    
+    fig.legend(loc=3)
+    fig.grid()
+    fig.figure.savefig(path + '{}.png'.format(loss_name))
+    plt.close()
+
+
 def save_plots(losses, epoch_num, path):
     plot_loss(losses[:epoch_num, 0], losses[:epoch_num, 5], 'loss_rpn_cls', path)
     plot_loss(losses[:epoch_num, 1], losses[:epoch_num, 6], 'loss_rpn_regr', path)
@@ -54,4 +69,6 @@ def save_plots_from_history(rpn_hist, cls_hist, path, num_classes):
     plot_loss(losses[:epoch, 10], losses[:epoch, 11], 'rpn_loss', path)
     plot_loss(losses[:epoch, 12], losses[:epoch, 13], 'detektor_loss', path)
     plot_loss(losses[:epoch, 10]+losses[:epoch, 12], losses[:epoch, 11]+losses[:epoch, 13], 'total_loss', path)
+    
+    plot_rpn_det_loss(losses[:epoch, 10], losses[:epoch, 11], losses[:epoch, 12], losses[:epoch, 13], 'total_loss', path)
 

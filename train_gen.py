@@ -26,8 +26,8 @@ try:
     parser = OptionParser()
     
     parser.add_option("-p", "--path", dest="train_path", help="Path to training data.", default="~/VOCdevkit/")
-    parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=32)
-    parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='mynet') #change default to mine
+    parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=16)
+    parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='vgg16')
     parser.add_option("--hf", dest="horizontal_flips", help="Augment with horizontal flips in training. (Default=false).", action="store_true", default=False)
     parser.add_option("--vf", dest="vertical_flips", help="Augment with vertical flips in training. (Default=false).", action="store_true", default=False)
     parser.add_option("--rot", "--rot_90", dest="rot_90", help="Augment with 90 degree rotations in training. (Default=false).",
@@ -62,12 +62,12 @@ try:
     #batch size fuer den Detektor
     C.num_rois = int(options.num_rois)
     
-    if options.network == 'mynet_small':
-        from netze import mynet_small as nn
-        C.network = 'mynet_small'
-    if options.network == 'mynet_medium':
-        from netze import mynet_medium as nn
-        C.network = 'mynet_medium'
+    if options.network == 'vgg16_small':
+        from netze import vgg16_small as nn
+        C.network = 'vgg16_small'
+    elif options.network == 'vgg16_medium':
+        from netze import vgg16_medium as nn
+        C.network = 'vgg16_medium'
     elif options.network == 'vgg16':
         from netze import vgg16 as nn
         C.network = 'vgg16'
@@ -189,16 +189,15 @@ try:
         except:
             print('Model weights konnten nicht geladen werden.')
 
+    optimizer_rpn = Adam(lr=0.0001)
+    optimizer_det = Adam(lr=0.0001)
     #Modelle kompilieren
-    model_rpn.compile(optimizer=Adam(lr=0.00001), loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
-    model_classifier.compile(optimizer=Adam(lr=0.00001), loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
+    model_rpn.compile(optimizer=optimizer_rpn, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
+    model_classifier.compile(optimizer=optimizer_det, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
     model_all.compile(optimizer='sgd', loss='mae')
     model_all.summary()
     
-    
-    rpn_accuracy_rpn_monitor_train = []
-    rpn_accuracy_for_epoch_train = []
-    
+
     graph = K.get_session().graph
     
     #
@@ -219,7 +218,7 @@ try:
         # das Training anfaengt zu stagnieren um dann Fluktuationen im Validationsfehler zu reduzieren.
         if wait%incr_valsteps_after_epochs==0 and wait/incr_valsteps_after_epochs==times_increased+1:
             times_increased += 1
-            validation_length = min(validation_length*2, len(val_imgs))
+            validation_length = min(validation_length*2, int(len(val_imgs)/2))
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
