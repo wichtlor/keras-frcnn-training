@@ -218,7 +218,7 @@ try:
         # das Training anfaengt zu stagnieren um dann Fluktuationen im Validationsfehler zu reduzieren.
         if wait%incr_valsteps_after_epochs==0 and wait/incr_valsteps_after_epochs==times_increased+1:
             times_increased += 1
-            validation_length = min(validation_length*2, int(len(val_imgs)/2))
+            validation_length = min(validation_length*2, 900)
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
