@@ -164,41 +164,6 @@ print(class_mapping)
 all_imgs, _, _ = get_data(options.test_path)
 test_imgs = [s for s in all_imgs if s['imageset'] == 'test']
 
-#==============================================================================
-# #Netz-Eingabetensoren
-# input_shape_img = (None, None, 3) #width*height*colorchannel
-# img_input = Input(shape=input_shape_img)
-# roi_input = Input(shape=(C.num_rois, 4))
-# shared_features_input = Input(shape=(None,None,num_features))
-# 
-# #Graph Base Layer
-# shared_layers = nn.nn_base(img_input)
-# 
-# #Graph RPN
-# num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
-# rpn = nn.rpn(shared_layers, num_anchors)
-# 
-# #Graph Klassifikator
-# classifier = nn.classifier(shared_layers, roi_input, C.num_rois, nb_classes=len(class_mapping))
-# 
-# #RPN Model
-# #Input: Tensor(img_input(_,_,3))
-# #Output: Tensoren(x_class(), x_regr(), shared_layers_featuremaps(None,None,num_features))
-# model_rpn = Model(img_input, rpn)
-# 
-# #Klassifikator Modell
-# #Input: Tensoren(shared_features_input(None,None,num_features), roi_input(C.num_rois, 4))
-# #Output: Tensoren(class(),regr())
-# model_classifier = Model([shared_features_input, roi_input], classifier)
-# 
-# #load weights
-# model_rpn.load_weights(C.model_path, by_name=True)
-# model_classifier.load_weights(C.model_path, by_name=True)
-# 
-# 
-# model_rpn.compile(optimizer='sgd', loss='mse')
-# model_classifier.compile(optimizer='sgd', loss='mse')
-#==============================================================================
 input_shape_img = (None, None, 3)
 input_shape_features = (None, None, num_features)
 

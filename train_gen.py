@@ -125,6 +125,8 @@ try:
             lr_rpn_wait = pickle.load(resume_train_file)
             best_det_val_loss = pickle.load(resume_train_file)
             lr_det_wait = pickle.load(resume_train_file)
+            new_rpn_lr = pickle.load(resume_train_file)
+            new_det_lr = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
@@ -136,13 +138,15 @@ try:
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
-        lr_patience = 10            #Learning rate reducer
-        lr_epsilon = 1e-4           #Learning rate reducer
+        lr_patience = 12            #Learning rate reducer
+        lr_epsilon = 0.005          #Learning rate reducer
         lr_reduce_factor= 0.4       #Learning rate reducer
         best_rpn_val_loss = np.Inf  #Learning rate reducer
         lr_rpn_wait = 0             #Learning rate reducer
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer
+    new_rpn_lr = 0.00001        #Learning rate reducer
+    new_det_lr = 0.00001        #Learning rate reducer
         
     random.seed(train_seed)
     
@@ -189,8 +193,8 @@ try:
         except:
             print('Model weights konnten nicht geladen werden.')
 
-    optimizer_rpn = Adam(lr=0.00001)
-    optimizer_det = Adam(lr=0.00001)
+    optimizer_rpn = Adam(lr=new_rpn_lr)
+    optimizer_det = Adam(lr=new_det_lr)
     #Modelle kompilieren
     model_rpn.compile(optimizer=optimizer_rpn, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
     model_classifier.compile(optimizer=optimizer_det, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
@@ -301,6 +305,8 @@ try:
             pickle.dump(lr_rpn_wait, resume_train_file)
             pickle.dump(best_det_val_loss, resume_train_file)
             pickle.dump(lr_det_wait, resume_train_file)
+            pickle.dump(new_rpn_lr, resume_train_file)
+            pickle.dump(new_det_lr, resume_train_file)
 
 
 except Exception:
