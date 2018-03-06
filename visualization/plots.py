@@ -23,7 +23,7 @@ def plot_rpn_det_loss(train_rpn_loss, val_rpn_loss, train_det_loss, val_det_loss
     fig.plot(val_det_loss, label='val_det')
     fig.set(xlabel='epoch', ylabel='loss', title=loss_name)
     fig.set_ylim(0)    
-    fig.legend(loc=3)
+    fig.legend(loc=1)
     fig.grid()
     fig.figure.savefig(path + '{}.png'.format(loss_name))
     plt.close()

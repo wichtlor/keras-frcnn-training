@@ -102,7 +102,7 @@ try:
     
     #persist class_mapping in config
     C.class_mapping = class_mapping
-    
+    C.balanced_classes = True
     print('Training images per class:')
     pprint.pprint(classes_count)
     print('Num classes (including bg) = {}'.format(len(classes_count)))
