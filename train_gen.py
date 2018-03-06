@@ -20,6 +20,17 @@ from visualization.plots import save_plots_from_history
 from module import data_generators
 
 
+def train_on_classes(classes_count, class_mapping):
+    full_list = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
+    train_on = ['bicycle','bird','boat','bottle','bus','cat','cow','dog','sheep','sofa','train']
+    new_classes_count = {}
+    new_class_mapping = {}
+    for cls in train_on:
+        if cls not in new_class_mapping:
+            new_class_mapping[cls] = len(new_class_mapping)
+        new_classes_count[cls] = classes_count[cls]
+    return new_classes_count, new_class_mapping
+
 try:
 
     
@@ -83,7 +94,10 @@ try:
     #   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
     all_imgs, classes_count, class_mapping = get_data(options.train_path)
     
-    #fuegt background klasse hinzu
+#==============================================================================
+#     classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
+#==============================================================================
+    
     if 'bg' not in classes_count:
         classes_count['bg'] = 0
         class_mapping['bg'] = len(class_mapping)
@@ -125,10 +139,8 @@ try:
             lr_rpn_wait = pickle.load(resume_train_file)
             best_det_val_loss = pickle.load(resume_train_file)
             lr_det_wait = pickle.load(resume_train_file)
-#==============================================================================
-#             new_rpn_lr = pickle.load(resume_train_file)
-#             new_det_lr = pickle.load(resume_train_file)
-#==============================================================================
+            new_rpn_lr = pickle.load(resume_train_file)
+            new_det_lr = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
@@ -147,8 +159,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer
-    new_rpn_lr = 0.00001        #Learning rate reducer
-    new_det_lr = 0.00001        #Learning rate reducer
+        new_rpn_lr = 0.00001        #Learning rate reducer
+        new_det_lr = 0.00001        #Learning rate reducer
         
     random.seed(train_seed)
     
