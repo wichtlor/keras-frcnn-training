@@ -25,7 +25,7 @@ def train_on_classes(classes_count, class_mapping):
     train_on = ['bird','cat','cow','dog','sheep','horse','person']
     new_classes_count = {}
     new_class_mapping = {}
-    for cls in train_on:
+    for cls in full_list:
         if cls not in new_class_mapping:
             new_class_mapping[cls] = len(new_class_mapping)
         new_classes_count[cls] = classes_count[cls]
