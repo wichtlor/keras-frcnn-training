@@ -22,7 +22,7 @@ from module import data_generators
 
 def train_on_classes(classes_count, class_mapping):
     full_list = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
-    train_on = ['bicycle','bird','boat','bottle','bus','cat','cow','dog','sheep','sofa','train']
+    train_on = ['bird','cat','cow','dog','sheep','horse','person']
     new_classes_count = {}
     new_class_mapping = {}
     for cls in train_on:
@@ -94,9 +94,7 @@ try:
     #   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
     all_imgs, classes_count, class_mapping = get_data(options.train_path)
     
-#==============================================================================
-#     classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
-#==============================================================================
+    classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
     
     if 'bg' not in classes_count:
         classes_count['bg'] = 0
