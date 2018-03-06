@@ -323,7 +323,7 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
 
         for img_data in all_img_data:
             try:
-                #rotiert durch alle Klassen durch, sodass jede Klasse gleichhäufig drankommt
+                #rotiert durch alle Klassen durch, sodass jede Klasse gleichhaeufig drankommt
                 if C.balanced_classes and sample_selector.skip_sample_for_balanced_class(img_data):
                     continue
 
@@ -393,7 +393,7 @@ def get_classifier_gt(all_img_data, model_rpn, graph, class_count, C, img_length
             
         for img_data in all_img_data:
             try:
-                #print('Thread:{} and image: {}'.format(threading.current_thread(), img_data['filepath']))
+                #rotiert durch alle Klassen durch, sodass jede Klasse gleichhaeufig drankommt
                 if C.balanced_classes and sample_selector.skip_sample_for_balanced_class(img_data):
                     continue
 
