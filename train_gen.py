@@ -94,7 +94,9 @@ try:
     #   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
     all_imgs, classes_count, class_mapping = get_data(options.train_path)
     
-    classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
+#==============================================================================
+#     classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
+#==============================================================================
     
     if 'bg' not in classes_count:
         classes_count['bg'] = 0
