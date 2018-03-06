@@ -141,6 +141,10 @@ elif options.network == 'vgg16':
     from netze import vgg16 as nn
     C.network = 'vgg16'
     num_features = 512
+elif options.network == 'vgg16_dense_low':
+    from netze import vgg16_dense_low as nn
+    C.network = 'vgg16_dense_low'
+    num_features = 512
 else:
     print('Not a valid model')
     raise ValueError
