@@ -160,8 +160,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-        rpn_lr = 0.001
-        det_lr = 0.001
+        rpn_lr = 0.00001
+        det_lr = 0.00001
         
     random.seed(train_seed)
     
@@ -208,8 +208,8 @@ try:
         except:
             print('Model weights konnten nicht geladen werden.')
 
-    optimizer_rpn = SGD(lr=rpn_lr)
-    optimizer_det = SGD(lr=det_lr)
+    optimizer_rpn = Adam(lr=rpn_lr)
+    optimizer_det = Adam(lr=det_lr)
     #Modelle kompilieren
     model_rpn.compile(optimizer=optimizer_rpn, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
     model_classifier.compile(optimizer=optimizer_det, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
