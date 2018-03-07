@@ -149,23 +149,24 @@ try:
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
-        validation_length = 300
-        times_increased = 0
-        patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
-        wait = 0            #early stopping Epochen counter ohne Verbesserung des Validation Losses
-        min_delta = 0.005   #early stopping minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
+
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
-        lr_patience = 8             #Learning rate reducer: reduziere die Lernrate nach x Epochen ohne Verbesserung des Validation Losses
-        lr_epsilon = 0.005          #Learning rate reducer: minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
-        lr_reduce_factor= 0.3       #Learning rate reducer: Faktor der Lernratenreduzierung
-        best_rpn_val_loss = np.Inf  #Learning rate reducer
-        lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
-        best_det_val_loss = np.Inf  #Learning rate reducer
-        lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-        rpn_lr = 0.00001
-        det_lr = 0.00001
+    lr_patience = 8             #Learning rate reducer: reduziere die Lernrate nach x Epochen ohne Verbesserung des Validation Losses
+    lr_epsilon = 0.005          #Learning rate reducer: minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
+    lr_reduce_factor= 0.3       #Learning rate reducer: Faktor der Lernratenreduzierung
+    best_rpn_val_loss = np.Inf  #Learning rate reducer
+    lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
+    best_det_val_loss = np.Inf  #Learning rate reducer
+    lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
+    rpn_lr = 0.00001
+    det_lr = 0.00001
+    validation_length = 300
+    times_increased = 0
+    patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
+    wait = 0            #early stopping Epochen counter ohne Verbesserung des Validation Losses
+    min_delta = 0.005   #early stopping minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
         
     random.seed(train_seed)
     
