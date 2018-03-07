@@ -159,7 +159,7 @@ try:
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
-        lr_patience = 12            #Learning rate reducer
+        lr_patience = 8            #Learning rate reducer
         lr_epsilon = 0.005          #Learning rate reducer
         lr_reduce_factor= 0.3       #Learning rate reducer
         best_rpn_val_loss = np.Inf  #Learning rate reducer
@@ -243,7 +243,7 @@ try:
         # das Training anfaengt zu stagnieren um dann Fluktuationen im Validationsfehler zu reduzieren.
         if wait%incr_valsteps_after_epochs==0 and wait/incr_valsteps_after_epochs==times_increased+1:
             times_increased += 1
-            validation_length = min(validation_length*2, 900)
+            validation_length = min(validation_length*2, 600)
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
