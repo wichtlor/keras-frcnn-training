@@ -74,9 +74,13 @@ def classifier(base_layers, input_rois, num_rois, nb_classes = 21, trainable=Fal
     #Die Eingabe (out_roi_pool) in die TimeDistributed Layer ist: (1, num_rois, channels, pooling_regions, pooling_regions)
     out = TimeDistributed(Flatten(name='flatten'))(out_roi_pool)
     out = TimeDistributed(Dense(2048, kernel_initializer='he_normal', activation='relu', name='fc1'))(out)
-    out = TimeDistributed(Dropout(0.3))(out)
+#==============================================================================
+#     out = TimeDistributed(Dropout(0.5))(out)
+#==============================================================================
     out = TimeDistributed(Dense(2048, kernel_initializer='he_normal', activation='relu', name='fc2'))(out)
-    out = TimeDistributed(Dropout(0.3))(out)
+#==============================================================================
+#     out = TimeDistributed(Dropout(0.5))(out)
+#==============================================================================
 
     out_class = TimeDistributed(Dense(nb_classes, activation='softmax', kernel_initializer='zero'), name='dense_class_{}'.format(nb_classes))(out)
     # note: no regression target for bg class

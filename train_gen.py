@@ -134,7 +134,7 @@ try:
             classifier_history = pickle.load(resume_train_file)
             best_loss = pickle.load(resume_train_file)
             lr_patience = pickle.load(resume_train_file)
-            lr_epsilon =pickle.load(resume_train_file)
+            lr_epsilon = pickle.load(resume_train_file)
             lr_reduce_factor = pickle.load(resume_train_file)
             best_rpn_val_loss = pickle.load(resume_train_file)
             lr_rpn_wait = pickle.load(resume_train_file)
@@ -147,7 +147,7 @@ try:
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
         validation_length = 300
         times_increased = 0
-        patience = 20       #early stopping nach x Epochen
+        patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
         wait = 0            #early stopping Epochen counter ohne Verbesserung des Validation Losses
         min_delta = 0.005   #early stopping minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
         rpn_history = []
@@ -160,8 +160,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-    rpn_lr = 0.001
-    det_lr = 0.001
+        rpn_lr = 0.001
+        det_lr = 0.001
         
     random.seed(train_seed)
     
