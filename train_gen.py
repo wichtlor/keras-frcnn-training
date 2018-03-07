@@ -97,7 +97,9 @@ try:
     #   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
     all_imgs, classes_count, class_mapping = get_data(options.train_path)
     
-    classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
+#==============================================================================
+#     classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
+#==============================================================================
     
     if 'bg' not in classes_count:
         classes_count['bg'] = 0
@@ -105,7 +107,9 @@ try:
     
     #persist class_mapping in config
     C.class_mapping = class_mapping
-    C.balanced_classes = True
+#==============================================================================
+#     C.balanced_classes = True
+#==============================================================================
     print('Training images per class:')
     pprint.pprint(classes_count)
     print('Num classes (including bg) = {}'.format(len(classes_count)))
@@ -140,8 +144,10 @@ try:
             lr_rpn_wait = pickle.load(resume_train_file)
             best_det_val_loss = pickle.load(resume_train_file)
             lr_det_wait = pickle.load(resume_train_file)
-            new_rpn_lr = pickle.load(resume_train_file)
-            new_det_lr = pickle.load(resume_train_file)
+#==============================================================================
+#             new_rpn_lr = pickle.load(resume_train_file)
+#             new_det_lr = pickle.load(resume_train_file)
+#==============================================================================
     else:
         train_seed = random.random()
         incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
@@ -160,8 +166,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer
-        new_rpn_lr = 0.0001        #Learning rate reducer
-        new_det_lr = 0.0001        #Learning rate reducer
+    new_rpn_lr = 0.0001        #Learning rate reducer
+    new_det_lr = 0.0001        #Learning rate reducer
         
     random.seed(train_seed)
     
