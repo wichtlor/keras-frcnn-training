@@ -166,8 +166,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer
-    new_rpn_lr = 0.0001        #Learning rate reducer
-    new_det_lr = 0.0001        #Learning rate reducer
+    new_rpn_lr = 0.00001        #Learning rate reducer
+    new_det_lr = 0.00001        #Learning rate reducer
         
     random.seed(train_seed)
     
@@ -214,8 +214,8 @@ try:
         except:
             print('Model weights konnten nicht geladen werden.')
 
-    optimizer_rpn = Adam(lr=new_rpn_lr)
-    optimizer_det = Adam(lr=new_det_lr)
+    optimizer_rpn = SGD(lr=new_rpn_lr)
+    optimizer_det = SGD(lr=new_det_lr)
     #Modelle kompilieren
     model_rpn.compile(optimizer=optimizer_rpn, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
     model_classifier.compile(optimizer=optimizer_det, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
