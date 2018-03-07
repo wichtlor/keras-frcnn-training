@@ -97,7 +97,9 @@ try:
     #   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
     all_imgs, classes_count, class_mapping = get_data(options.train_path)
     
-    classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
+#==============================================================================
+#     classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
+#==============================================================================
     
     if 'bg' not in classes_count:
         classes_count['bg'] = 0
@@ -105,7 +107,9 @@ try:
     
     #persist class_mapping in config
     C.class_mapping = class_mapping
-    C.balanced_classes = True
+#==============================================================================
+#     C.balanced_classes = True
+#==============================================================================
     print('Training images per class:')
     pprint.pprint(classes_count)
     print('Num classes (including bg) = {}'.format(len(classes_count)))
