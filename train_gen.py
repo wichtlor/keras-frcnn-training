@@ -160,8 +160,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-    rpn_lr = 0.00001
-    det_lr = 0.00001
+    rpn_lr = 0.001
+    det_lr = 0.001
         
     random.seed(train_seed)
     
@@ -237,7 +237,7 @@ try:
         # das Training anfaengt zu stagnieren um dann Fluktuationen im Validationsfehler zu reduzieren.
         if wait%incr_valsteps_after_epochs==0 and wait/incr_valsteps_after_epochs==times_increased+1:
             times_increased += 1
-            validation_length = min(validation_length*2, 600)
+            validation_length = min(validation_length*2, 300)
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
