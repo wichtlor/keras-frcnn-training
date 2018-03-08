@@ -85,6 +85,9 @@ try:
     elif options.network == 'vgg16_dense_low':
         from netze import vgg16_dense_low as nn
         C.network = 'vgg16_dense_low'
+    elif options.network == 'vgg16_dense_low_dropout':
+        from netze import vgg16_dense_low_dropout as nn
+        C.network = 'vgg16_dense_low_dropout'
     else:
         print('Not a valid model')
         raise ValueError
@@ -97,9 +100,7 @@ try:
     #   class_mapping: Mapped jede Objektklasse auf eine Zahl (0-19)
     all_imgs, classes_count, class_mapping = get_data(options.train_path)
     
-#==============================================================================
-#     classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
-#==============================================================================
+    classes_count, class_mapping = train_on_classes(classes_count, class_mapping)
     
     if 'bg' not in classes_count:
         classes_count['bg'] = 0
@@ -107,9 +108,7 @@ try:
     
     #persist class_mapping in config
     C.class_mapping = class_mapping
-#==============================================================================
-#     C.balanced_classes = True
-#==============================================================================
+    C.balanced_classes = True
     print('Training images per class:')
     pprint.pprint(classes_count)
     print('Num classes (including bg) = {}'.format(len(classes_count)))
@@ -148,25 +147,24 @@ try:
             det_lr = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
-        incr_valsteps_after_epochs = 4 #erhoehe validation steps, nach x Epochen in denen der Validation Fehler sich nicht gebessert hat
-
+        incr_valsteps_after_epochs = 80 #erhoehe validation steps, nach x Epochen
+        validation_length = 300
+        times_increased = 0
+        patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
+        wait = 0            #early stopping Epochen counter ohne Verbesserung des Validation Losses
+        min_delta = 0.005   #early stopping minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
         rpn_history = []
         classifier_history = []
         best_loss = np.Inf
-    lr_patience = 8             #Learning rate reducer: reduziere die Lernrate nach x Epochen ohne Verbesserung des Validation Losses
-    lr_epsilon = 0.005          #Learning rate reducer: minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
-    lr_reduce_factor= 0.3       #Learning rate reducer: Faktor der Lernratenreduzierung
-    best_rpn_val_loss = np.Inf  #Learning rate reducer
-    lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
-    best_det_val_loss = np.Inf  #Learning rate reducer
-    lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-    rpn_lr = 0.00001
-    det_lr = 0.00001
-    validation_length = 300
-    times_increased = 0
-    patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
-    wait = 0            #early stopping Epochen counter ohne Verbesserung des Validation Losses
-    min_delta = 0.005   #early stopping minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
+        lr_patience = 8             #Learning rate reducer: reduziere die Lernrate nach x Epochen ohne Verbesserung des Validation Losses
+        lr_epsilon = 0.005          #Learning rate reducer: minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
+        lr_reduce_factor= 0.3       #Learning rate reducer: Faktor der Lernratenreduzierung
+        best_rpn_val_loss = np.Inf  #Learning rate reducer
+        lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
+        best_det_val_loss = np.Inf  #Learning rate reducer
+        lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
+        rpn_lr = 0.001
+        det_lr = 0.001
         
     random.seed(train_seed)
     
@@ -213,8 +211,8 @@ try:
         except:
             print('Model weights konnten nicht geladen werden.')
 
-    optimizer_rpn = Adam(lr=rpn_lr)
-    optimizer_det = Adam(lr=det_lr)
+    optimizer_rpn = SGD(lr=rpn_lr, momentum=0.9, nesterov=True)
+    optimizer_det = SGD(lr=det_lr)
     #Modelle kompilieren
     model_rpn.compile(optimizer=optimizer_rpn, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
     model_classifier.compile(optimizer=optimizer_det, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
@@ -239,10 +237,9 @@ try:
         start_time = time.time()
         
         #Um die Trainingszeit gering zu halten wird mit mit wenigen Validationsteps begonnen und erhoeht wenn
-        # das Training anfaengt zu stagnieren um dann Fluktuationen im Validationsfehler zu reduzieren.
-        if wait%incr_valsteps_after_epochs==0 and wait/incr_valsteps_after_epochs==times_increased+1:
-            times_increased += 1
-            validation_length = min(validation_length*2, 300)
+        # das Training anfaengt zu stagnieren um Fluktuationen im Validationsfehler zu reduzieren.
+        if incr_valsteps_after_epochs == len(rpn_history):
+            validation_length = 900
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
