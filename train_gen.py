@@ -239,7 +239,7 @@ try:
         #Um die Trainingszeit gering zu halten wird mit mit wenigen Validationsteps begonnen und erhoeht wenn
         # das Training anfaengt zu stagnieren um Fluktuationen im Validationsfehler zu reduzieren.
         if incr_valsteps_after_epochs == len(rpn_history):
-            validation_length = 900
+            validation_length = 700
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
