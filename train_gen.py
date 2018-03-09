@@ -85,6 +85,9 @@ try:
     elif options.network == 'vgg16_dense_low':
         from netze import vgg16_dense_low as nn
         C.network = 'vgg16_dense_low'
+    elif options.network == 'vgg16_he_init':
+        from netze import vgg16_he_init as nn
+        C.network = 'vgg16_he_init'
     elif options.network == 'vgg16_dense_low_dropout':
         from netze import vgg16_dense_low_dropout as nn
         C.network = 'vgg16_dense_low_dropout'
@@ -147,7 +150,7 @@ try:
             det_lr = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
-        incr_valsteps_after_epochs = 80 #erhoehe validation steps, nach x Epochen
+        incr_valsteps_after_epochs = 30 #erhoehe validation steps, nach x Epochen
         validation_length = 300
         times_increased = 0
         patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
@@ -163,8 +166,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-        rpn_lr = 0.00003
-        det_lr = 0.00003
+        rpn_lr = 0.00001
+        det_lr = 0.00001
         
     random.seed(train_seed)
     
