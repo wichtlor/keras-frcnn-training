@@ -214,8 +214,8 @@ try:
         except:
             print('Model weights konnten nicht geladen werden.')
 
-    optimizer_rpn = SGD(lr=rpn_lr, momentum=0.9, nesterov=True)
-    optimizer_det = SGD(lr=det_lr, momentum=0.9, nesterov=True)
+    optimizer_rpn = Adam(lr=rpn_lr)
+    optimizer_det = Adam(lr=det_lr)
     #Modelle kompilieren
     model_rpn.compile(optimizer=optimizer_rpn, loss=[losses.rpn_loss_cls(num_anchors), losses.rpn_loss_regr(num_anchors)])
     model_classifier.compile(optimizer=optimizer_det, loss=[losses.class_loss_cls, losses.class_loss_regr(len(classes_count)-1)], metrics={'dense_class_{}'.format(len(classes_count)): 'accuracy'})
