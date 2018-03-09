@@ -85,12 +85,12 @@ try:
     elif options.network == 'vgg16_dense_low':
         from netze import vgg16_dense_low as nn
         C.network = 'vgg16_dense_low'
-    elif options.network == 'vgg16_he_init':
-        from netze import vgg16_he_init as nn
-        C.network = 'vgg16_he_init'
     elif options.network == 'vgg16_dense_low_dropout':
         from netze import vgg16_dense_low_dropout as nn
         C.network = 'vgg16_dense_low_dropout'
+    elif options.network == 'vgg16_he_init':
+        from netze import vgg16_he_init as nn
+        C.network = 'vgg16_he_init'
     else:
         print('Not a valid model')
         raise ValueError
