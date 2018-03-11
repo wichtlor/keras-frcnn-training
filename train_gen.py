@@ -91,6 +91,9 @@ try:
     elif options.network == 'vgg16_he_init':
         from netze import vgg16_he_init as nn
         C.network = 'vgg16_he_init'
+    elif options.network == 'vgg16_finetune':
+        from netze import vgg16_finetune as nn
+        C.network = 'vgg16_finetune'
     else:
         print('Not a valid model')
         raise ValueError
