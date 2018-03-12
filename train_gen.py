@@ -37,7 +37,7 @@ try:
     parser = OptionParser()
     
     parser.add_option("-p", "--path", dest="train_path", help="Path to training data.", default="~/VOCdevkit/")
-    parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=2)
+    parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=10)
     parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='vgg16')
     parser.add_option("--hf", dest="horizontal_flips", help="Augment with horizontal flips in training. (Default=false).", action="store_true", default=False)
     parser.add_option("--vf", dest="vertical_flips", help="Augment with vertical flips in training. (Default=false).", action="store_true", default=False)
@@ -118,6 +118,7 @@ try:
     #persist class_mapping in config
     C.class_mapping = class_mapping
     C.balanced_classes = True
+    C.im_size = 500
     print('Training images per class:')
     pprint.pprint(classes_count)
     print('Num classes (including bg) = {}'.format(len(classes_count)))
