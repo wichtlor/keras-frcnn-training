@@ -1,7 +1,7 @@
 from keras.layers import Flatten, Dense, Conv2D, MaxPooling2D, Dropout
 from keras.layers import TimeDistributed
 from keras_frcnn.RoiPoolingConv import RoiPoolingConv
-from keras.layers.advanced_activations import LeakyReLU
+from keras.activations import relu
 
 def get_img_output_length(width, height):
     '''
@@ -18,44 +18,31 @@ def nn_base(img_input, trainable=False):
     Definition der Basis Layer.
     '''
     # Block 1
-    x = Conv2D(64, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block1_conv1')(img_input)
-    x = LeakyReLU(alpha=0.001)(x)
-    x = Conv2D(64, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block1_conv2')(x)
-    x = LeakyReLU(alpha=0.001)(x)
+    x = Conv2D(64, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block1_conv1')(img_input)
+    x = Conv2D(64, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block1_conv2')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
 
     # Block 2
-    x = Conv2D(128, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block2_conv1')(x)
-    x = LeakyReLU(alpha=0.001)(x)
-    x = Conv2D(128, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block2_conv2')(x)
-    x = LeakyReLU(alpha=0.001)(x)
+    x = Conv2D(128, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block2_conv1')(x)
+    x = Conv2D(128, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block2_conv2')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
 
     # Block 3
-    x = Conv2D(256, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block3_conv1')(x)
-    x = LeakyReLU(alpha=0.001)(x)
-    x = Conv2D(256, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block3_conv2')(x)
-    x = LeakyReLU(alpha=0.001)(x)
-    x = Conv2D(256, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block3_conv3')(x)
-    x = LeakyReLU(alpha=0.001)(x)
+    x = Conv2D(256, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block3_conv1')(x)
+    x = Conv2D(256, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block3_conv2')(x)
+    x = Conv2D(256, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block3_conv3')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
 
     # Block 4
-    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block4_conv1')(x)
-    x = LeakyReLU(alpha=0.001)(x)
-    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block4_conv2')(x)
-    x = LeakyReLU(alpha=0.001)(x)
-    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block4_conv3')(x)
-    x = LeakyReLU(alpha=0.001)(x)
+    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block4_conv1')(x)
+    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block4_conv2')(x)
+    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block4_conv3')(x)
     x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
 
     # Block 5
-    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block5_conv1')(x)
-    x = LeakyReLU(alpha=0.001)(x)
-    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block5_conv2')(x)
-    x = LeakyReLU(alpha=0.001)(x)
-    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation='linear', padding='same', name='block5_conv3')(x)
-    x = LeakyReLU(alpha=0.001)(x)
+    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block5_conv1')(x)
+    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block5_conv2')(x)
+    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', activation=relu(alpha=0.001), padding='same', name='block5_conv3')(x)
 
     return x
     
@@ -65,8 +52,7 @@ def rpn(base_layers, num_anchors, trainable=False):
     dann Objectness Scores und BBox Regression stattfinden.
     '''
     
-    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', padding='same', activation='linear', name='rpn_conv1')(base_layers)
-    x = LeakyReLU(alpha=0.001)(x)
+    x = Conv2D(512, (3, 3), kernel_initializer='he_normal', padding='same', activation=relu(alpha=0.001), name='rpn_conv1')(base_layers)
 
     x_class = Conv2D(num_anchors, (1, 1), activation='sigmoid', kernel_initializer='uniform', name='rpn_out_class')(x)
     x_regr = Conv2D(num_anchors * 4, (1, 1), activation='linear', kernel_initializer='zero', name='rpn_out_regress')(x)
@@ -87,11 +73,9 @@ def classifier(base_layers, input_rois, num_rois, nb_classes = 21, trainable=Fal
 
     #Die Eingabe (out_roi_pool) in die TimeDistributed Layer ist: (1, num_rois, channels, pooling_regions, pooling_regions)
     out = TimeDistributed(Flatten(name='flatten'))(out_roi_pool)
-    out = TimeDistributed(Dense(4096, kernel_initializer='he_normal', activation='linear', name='fc1'))(out)
-    out = TimeDistributed(LeakyReLU(alpha=0.001))(out)
+    out = TimeDistributed(Dense(4096, kernel_initializer='he_normal', activation=relu(alpha=0.001), name='fc1'))(out)
     out = TimeDistributed(Dropout(0.5))(out)
-    out = TimeDistributed(Dense(4096, kernel_initializer='he_normal', activation='linear', name='fc2'))(out)
-    out = TimeDistributed(LeakyReLU(alpha=0.001))(out)
+    out = TimeDistributed(Dense(4096, kernel_initializer='he_normal', activation=relu(alpha=0.001), name='fc2'))(out)
     out = TimeDistributed(Dropout(0.5))(out)
 
     out_class = TimeDistributed(Dense(nb_classes, activation='softmax', kernel_initializer='zero'), name='dense_class_{}'.format(nb_classes))(out)
