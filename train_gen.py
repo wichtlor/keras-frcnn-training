@@ -118,7 +118,7 @@ try:
     #persist class_mapping in config
     C.class_mapping = class_mapping
     C.balanced_classes = True
-    C.im_size = 450
+    C.im_size = 600
     print('Training images per class:')
     pprint.pprint(classes_count)
     print('Num classes (including bg) = {}'.format(len(classes_count)))
