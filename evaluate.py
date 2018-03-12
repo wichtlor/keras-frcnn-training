@@ -145,6 +145,26 @@ elif options.network == 'vgg16_dense_low':
     from netze import vgg16_dense_low as nn
     C.network = 'vgg16_dense_low'
     num_features = 512
+elif options.network == 'vgg16_dense_low_dropout':
+    from netze import vgg16_dense_low_dropout as nn
+    C.network = 'vgg16_dense_low_dropout'
+    num_features = 512
+elif options.network == 'vgg16_he_init':
+    from netze import vgg16_he_init as nn
+    C.network = 'vgg16_he_init'
+    num_features = 512
+elif options.network == 'vgg16_finetune':
+    from netze import vgg16_finetune as nn
+    C.network = 'vgg16_finetune'
+    num_features = 512
+elif options.network == 'vgg16_leaky':
+    from netze import vgg16_leaky as nn
+    C.network = 'vgg16_leaky'
+    num_features = 512
+elif options.network == 'vgg16_dense_low_dropout_fixed':
+    from netze import vgg16_dense_low_dropout_fixed as nn
+    C.network = 'vgg16_dense_low_dropout_fixed'
+    num_features = 512
 else:
     print('Not a valid model')
     raise ValueError
