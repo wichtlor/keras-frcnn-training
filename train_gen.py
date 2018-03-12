@@ -173,8 +173,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-        rpn_lr = 0.0001
-        det_lr = 0.0001
+        rpn_lr = 0.00001
+        det_lr = 0.00001
         
     random.seed(train_seed)
     
