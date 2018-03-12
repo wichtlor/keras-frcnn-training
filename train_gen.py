@@ -94,6 +94,9 @@ try:
     elif options.network == 'vgg16_finetune':
         from netze import vgg16_finetune as nn
         C.network = 'vgg16_finetune'
+    elif options.network == 'vgg16_leaky':
+        from netze import vgg16_leaky as nn
+        C.network = 'vgg16_leaky'
     else:
         print('Not a valid model')
         raise ValueError
@@ -153,7 +156,7 @@ try:
             det_lr = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
-        incr_valsteps_after_epochs = 30 #erhoehe validation steps, nach x Epochen
+        incr_valsteps_after_epochs = 70 #erhoehe validation steps, nach x Epochen
         validation_length = 300
         times_increased = 0
         patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
@@ -169,8 +172,8 @@ try:
         lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-        rpn_lr = 0.00001
-        det_lr = 0.00001
+        rpn_lr = 0.0001
+        det_lr = 0.0001
         
     random.seed(train_seed)
     
@@ -245,7 +248,7 @@ try:
         #Um die Trainingszeit gering zu halten wird mit mit wenigen Validationsteps begonnen und erhoeht wenn
         # das Training anfaengt zu stagnieren um Fluktuationen im Validationsfehler zu reduzieren.
         if incr_valsteps_after_epochs == len(rpn_history):
-            validation_length = 700
+            validation_length = 900
             print('Vergroessere Validationsteps auf {}'.format(validation_length))
 
         #Trainiere RPN und Classifier im Wechsel fuer je eine Epoche solang EarlyStopping das Training nicht beendet hat
