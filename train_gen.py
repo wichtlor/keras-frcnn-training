@@ -37,7 +37,7 @@ try:
     parser = OptionParser()
     
     parser.add_option("-p", "--path", dest="train_path", help="Path to training data.", default="~/VOCdevkit/")
-    parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=2)
+    parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=32)
     parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='vgg16')
     parser.add_option("--hf", dest="horizontal_flips", help="Augment with horizontal flips in training. (Default=false).", action="store_true", default=False)
     parser.add_option("--vf", dest="vertical_flips", help="Augment with vertical flips in training. (Default=false).", action="store_true", default=False)
@@ -97,6 +97,9 @@ try:
     elif options.network == 'vgg16_leaky':
         from netze import vgg16_leaky as nn
         C.network = 'vgg16_leaky'
+    elif options.network == 'vgg16_dense_low_dropout_fixed':
+        from netze import vgg16_dense_low_dropout_fixed as nn
+        C.network = 'vgg16_dense_low_dropout_fixed'
     else:
         print('Not a valid model')
         raise ValueError
@@ -157,7 +160,7 @@ try:
             det_lr = pickle.load(resume_train_file)
     else:
         train_seed = random.random()
-        incr_valsteps_after_epochs = 70 #erhoehe validation steps, nach x Epochen
+        incr_valsteps_after_epochs = 30 #erhoehe validation steps, nach x Epochen
         validation_length = 300
         times_increased = 0
         patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
