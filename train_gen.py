@@ -21,19 +21,16 @@ from module import data_generators
 
 
 def train_on_classes(classes_count, class_mapping):
-    full_list = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
-    train_on = ['bird','cat','cow','dog','sheep','horse','person']
+    full_class_list = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
     new_classes_count = {}
     new_class_mapping = {}
-    for cls in full_list:
+    for cls in full_class_list:
         if cls not in new_class_mapping:
             new_class_mapping[cls] = len(new_class_mapping)
         new_classes_count[cls] = classes_count[cls]
     return new_classes_count, new_class_mapping
 
 try:
-
-    
     parser = OptionParser()
     
     parser.add_option("-p", "--path", dest="train_path", help="Path to training data.", default="~/VOCdevkit/")
@@ -55,9 +52,7 @@ try:
 
     (options, args) = parser.parse_args()
     
-    
-    
-    
+
     C = config.Config()
     
     # pass the settings from the command line, and persist them in the config object
@@ -159,25 +154,25 @@ try:
             rpn_lr = pickle.load(resume_train_file)
             det_lr = pickle.load(resume_train_file)
     else:
-        train_seed = random.random()
+        train_seed = random.random() #wird verwendet um ein Training auf den selben Trainingsdaten fortzusetzen
         incr_valsteps_after_epochs = 30 #erhoehe validation steps, nach x Epochen
-        validation_length = 300
+        validation_length = 300 #Anz. Validation Steps
         times_increased = 0
         patience = 20       #early stopping nach x Epochen ohne Verbesserung des Validation Losses
         wait = 0            #early stopping Epochen counter ohne Verbesserung des Validation Losses
         min_delta = 0.005   #early stopping minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
-        rpn_history = []
-        classifier_history = []
-        best_loss = np.Inf
-        lr_patience = 10             #Learning rate reducer: reduziere die Lernrate nach x Epochen ohne Verbesserung des Validation Losses
+        rpn_history = []        #losses vom RPN
+        classifier_history = [] #losses vom Klassifikator
+        best_loss = np.Inf      #bester Validation Loss
+        lr_patience = 10            #Learning rate reducer: reduziere die Lernrate nach x Epochen ohne Verbesserung des Validation Losses
         lr_epsilon = 0.005          #Learning rate reducer: minimum der Verbesserung des Validation Losses um als Verbesserung gezaehlt zu werden
         lr_reduce_factor= 0.3       #Learning rate reducer: Faktor der Lernratenreduzierung
         best_rpn_val_loss = np.Inf  #Learning rate reducer
         lr_rpn_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des RPN Validation Losses
         best_det_val_loss = np.Inf  #Learning rate reducer
         lr_det_wait = 0             #Learning rate reducer: Epochen counter ohne Verbesserung des Detektor Validation Losses
-        rpn_lr = 0.00001
-        det_lr = 0.00001
+        rpn_lr = 0.00001            #lernrate des RPN
+        det_lr = 0.00001            #Lernrate des Klassifikators
         
     random.seed(train_seed)
     
@@ -224,6 +219,7 @@ try:
         except:
             print('Model weights konnten nicht geladen werden.')
 
+
     optimizer_rpn = Adam(lr=rpn_lr)
     optimizer_det = Adam(lr=det_lr)
     #Modelle kompilieren
@@ -232,16 +228,16 @@ try:
     model_all.compile(optimizer='sgd', loss='mae')
     model_all.summary()
     
-
+    #Data Generator benoetigt den Graphen um das Model des RPNs in einem anderen Thread ausfuehren zu koennen
     graph = K.get_session().graph
     
-    #
+    #Data Generatoren fuer RPN und Klassifikator
     data_gen_train_rpn = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     data_gen_val_rpn = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='val')
     data_gen_cls_train = data_generators.get_classifier_gt(train_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     data_gen_cls_val = data_generators.get_classifier_gt(val_imgs, model_rpn, graph, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
     
-    
+    #Trainings steps pro Epoche
     epoch_length = 1000
     num_epochs = int(options.num_epochs)
 
