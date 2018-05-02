@@ -23,6 +23,8 @@ parser.add_option("--config_filename", dest="config_filename", help=
 				"Location to read the metadata related to the training (generated when training).",
 				default="config.pickle")
 parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='resnet50')
+parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
+
 
 (options, args) = parser.parse_args()
 
@@ -163,10 +165,16 @@ model_classifier_only = Model([feature_map_input, roi_input], classifier)
 
 model_classifier = Model([feature_map_input, roi_input], classifier)
 
-print('Loading weights from {}'.format(C.model_path))
-model_rpn.load_weights(C.model_path, by_name=True)
-model_classifier.load_weights(C.model_path, by_name=True)
-
+# check if weight path was passed via command line
+if options.input_weight_path:
+	C.base_net_weights = options.input_weight_path
+	try:
+		print('loading weights from {}'.format(C.base_net_weights))
+		model_rpn.load_weights(C.base_net_weights, by_name=True)
+		model_classifier.load_weights(C.base_net_weights, by_name=True)
+	except:
+		print('Model weights konnten nicht geladen werden.')
+			
 model_rpn.compile(optimizer='sgd', loss='mse')
 model_classifier.compile(optimizer='sgd', loss='mse')
 
