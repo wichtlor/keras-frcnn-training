@@ -36,35 +36,44 @@ with open(config_output_filename, 'rb') as f_in:
 	C = pickle.load(f_in)
 
 if options.network == 'vgg16_small':
-	from netze import vgg16_small as nn
-	C.network = 'vgg16_small'
+    from netze import vgg16_small as nn
+    C.network = 'vgg16_small'
+    num_features = 192
 elif options.network == 'vgg16_medium':
-	from netze import vgg16_medium as nn
-	C.network = 'vgg16_medium'
+    from netze import vgg16_medium as nn
+    C.network = 'vgg16_medium'
+    num_features = 320
 elif options.network == 'vgg16':
-	from netze import vgg16 as nn
-	C.network = 'vgg16'
+    from netze import vgg16 as nn
+    C.network = 'vgg16'
+    num_features = 512
 elif options.network == 'vgg16_dense_low':
-	from netze import vgg16_dense_low as nn
-	C.network = 'vgg16_dense_low'
+    from netze import vgg16_dense_low as nn
+    C.network = 'vgg16_dense_low'
+    num_features = 512
 elif options.network == 'vgg16_dense_low_dropout':
-	from netze import vgg16_dense_low_dropout as nn
-	C.network = 'vgg16_dense_low_dropout'
+    from netze import vgg16_dense_low_dropout as nn
+    C.network = 'vgg16_dense_low_dropout'
+    num_features = 512
 elif options.network == 'vgg16_he_init':
-	from netze import vgg16_he_init as nn
-	C.network = 'vgg16_he_init'
+    from netze import vgg16_he_init as nn
+    C.network = 'vgg16_he_init'
+    num_features = 512
 elif options.network == 'vgg16_finetune':
-	from netze import vgg16_finetune as nn
-	C.network = 'vgg16_finetune'
+    from netze import vgg16_finetune as nn
+    C.network = 'vgg16_finetune'
+    num_features = 512
 elif options.network == 'vgg16_leaky':
-	from netze import vgg16_leaky as nn
-	C.network = 'vgg16_leaky'
+    from netze import vgg16_leaky as nn
+    C.network = 'vgg16_leaky'
+    num_features = 512
 elif options.network == 'vgg16_dense_low_dropout_fixed':
-	from netze import vgg16_dense_low_dropout_fixed as nn
-	C.network = 'vgg16_dense_low_dropout_fixed'
+    from netze import vgg16_dense_low_dropout_fixed as nn
+    C.network = 'vgg16_dense_low_dropout_fixed'
+    num_features = 512
 else:
-	print('Not a valid model')
-	raise ValueError
+    print('Not a valid model')
+    raise ValueError
 	
 # turn off any data augmentation at test time
 C.use_horizontal_flips = False
@@ -127,10 +136,6 @@ print(class_mapping)
 class_to_color = {class_mapping[v]: np.random.randint(0, 255, 3) for v in class_mapping}
 C.num_rois = int(options.num_rois)
 
-if C.network == 'resnet50':
-	num_features = 1024
-elif C.network == 'vgg':
-	num_features = 512
 
 if K.image_dim_ordering() == 'th':
 	input_shape_img = (3, None, None)
