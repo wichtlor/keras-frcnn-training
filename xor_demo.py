@@ -3,10 +3,10 @@ from keras.layers import Dense
 import numpy as np
 
 model = Sequential()
-model.add(Dense (2, activation=’tanh’, input_dim =2))
-model.add(Dense (1, activation=’sigmoid’))
+model.add(Dense (2, activation='tanh', input_dim=2))
+model.add(Dense (1, activation='sigmoid'))
 
-model.compile(optimizer=’sgd’, loss=’binary_crossentropy’)
+model.compile(optimizer='sgd', loss='binary_crossentropy')
 
 results = model.predict(X)
 print(results)
